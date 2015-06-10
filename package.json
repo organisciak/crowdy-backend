@@ -1,0 +1,26 @@
+{
+  "name": "crowdy-backend",
+  "version": "1.0.0",
+  "description": "Logic for serving Crowdy tasks",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/organisciak/crowdy-backend.git"
+  },
+  "keywords": [
+    "crowdsourcing",
+    "turk"
+  ],
+  "author": "Peter Organisciak",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/organisciak/crowdy-backend/issues"
+  },
+  "homepage": "https://github.com/organisciak/crowdy-backend",
+  "dependencies": {
+    "express": "^4.12.4"
+  }
+}
