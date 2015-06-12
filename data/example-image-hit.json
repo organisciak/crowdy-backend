@@ -1,0 +1,11 @@
+{
+    "name": "Test HIT",
+    "condition": { 
+        "firstTask": "basic", 
+	"laterTasks": "basic"  
+    },
+    "type": "Image tagging",
+    "items": ["id1", "id2"],
+    "setsPerItem": 3,
+    "maxSetSize": 10
+}
