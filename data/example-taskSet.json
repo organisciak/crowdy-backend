@@ -1,0 +1,38 @@
+{
+	"_id": "20DCNHMVHVKFYVMYSVY4S79KR1124Y",
+	"user": "TEST",
+	"time": {
+		"start":"Tue Jun 11 15:43:43 GMT 2013",
+		"submit":"Tue Jun 11 15:47:29 GMT 2013",
+		"workTime":"226"
+	},
+	"feedback":{},
+	"tasks":[
+	{
+		"type":"Image tagging",
+		"item":{ "type": "pin", "id":"237846424040203400"},
+		"timeSpent": 3,
+		"contribution":{
+			"tags": ["TEST", "ONE"]
+		}
+	},
+	{
+		"type":"Image tagging",
+		"item":{ "type": "pin", "id":"336362665888899600"},
+		"timeSpent": 2,
+		"contribution":{
+			"tags": ["TESTING", "TWO"]
+		}
+
+	},
+	{
+		"type":"Image tagging",
+		"item":{ "type": "pin", "id":"418131146625009600"},
+		"timeSpent": 1,
+		"contribution":{
+			"tags": ["TEST", "ONE", "THREE"]
+		}
+	}]
+}
+
+ 
