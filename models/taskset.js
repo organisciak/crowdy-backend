@@ -3,6 +3,7 @@ var mongoose = require('mongoose');
 var taskSetSchema = mongoose.Schema({
     _id: String, // The HITId
     user: String, //Should be a hashed version of WorkerId
+    hit_id: String, //My unique key for the HIT (Mongo HIT _id, not hitTypeID)
     time:{
         start: String, //AcceptTime
         submit: String, //SubmitTime
@@ -25,15 +26,6 @@ var taskSetSchema = mongoose.Schema({
         contribution:mongoose.Schema.Types.Mixed
     }]
 });
-
-/* EXAMPLE
-// Adding a method to the schema
-// Note that methods must be added to the schema before compiling into a model
-kittySchema.methods.speak = function () {
-    var greeting = this.name ? "Meow name is " + this.name : "I don't have a name";
-    console.log(greeting);
-};
-*/
 
 var TaskSet = mongoose.model('TaskSet', taskSetSchema);
 
