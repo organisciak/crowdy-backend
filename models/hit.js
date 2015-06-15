@@ -7,7 +7,7 @@ var hitSchema = mongoose.Schema({
         laterTasks:String  // i.e. basic, feedback, training, fast
     },
     type: String, // e.g. Image tagging
-    items: [String],
+    items: [Number],
     setsPerItem: Number,
     maxSetSize: Number,
     timer: { type: Number, default: null },
