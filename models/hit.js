@@ -8,6 +8,9 @@ var hitSchema = mongoose.Schema({
     },
     type: String, // e.g. Image tagging
     items: [Number],
+    // The name of the model for items, e.g. 'pin'.
+    // Should correspond to a mondel in models/{{itemModel}}.js
+    itemModel: String,
     setsPerItem: Number,
     maxSetSize: Number,
     timer: { type: Number, default: null },
