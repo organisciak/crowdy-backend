@@ -2,55 +2,46 @@
 #
 mongoose = require 'mongoose'
 async = require 'async'
-mongoose.connect 'mongodb://localhost/test'
-db = mongoose.connection
+_ = require 'underscore'
+#mongoose.connect 'mongodb://localhost/test'
+#mongoose.connect 'mongodb://localhost/test'
+#db = mongoose.connection
 
 TaskSet = require './models/taskset'
 Hit = require './models/hit'
 ObjectId = mongoose.Types.ObjectId
 
-user = "TEST"
-hit = "Test HIT"
-hit_id = "557df4899b962f181de3da0c" # The mongo ID for the hit item
+loadHIT = (opts) ->
+  #db.on('error', console.error.bind(console, 'connection error:'))
 
-db.on('error', console.error.bind(console, 'connection error:'))
-db.once('open', () ->
-  async.waterfall([
-    getBasicInfo,
-    getCondition,
-    getMaxedItems,
-    sampleTaskItems
-  ], (err, results) ->
-    if (err) then return console.error err
-    console.log "Waterfall done"
-    console.log results
-  )
-)
+  #db.once('open', () ->
+    async.waterfall([
+      (cb) -> cb(null, opts) # Pipe opts to first func in waterfal
+      getBasicInfo,
+      getCondition,
+      getMaxedItems,
+      sampleTaskItems
+    ], (err, results) ->
+      if (err) then return console.error err
+      console.log "Waterfall done"
+      console.log results
+    )
+  #)
 
 # 1. Count how many taskSets this user has done in this condition
 # Also fetch HIT info, since it can be done asynchronously
-getBasicInfo = (callback) ->
+getBasicInfo = (opts, callback) ->
   async.parallel({
+    opts: (callback) -> callback(null, opts)
     # Count of all taskSets done by the user
-    countUserAll: (callback) -> TaskSet.count({user:user}).exec(callback)
+    countUserAll: (callback) -> TaskSet.countUserAll(opts.user, callback)
     # Count of tasksets in the given condition done
-    countUserHIT: (callback) -> TaskSet.count({user:user, hit_id:hit_id}).exec(callback)
+    countUserHIT: (callback) -> TaskSet.countUserHIT(opts.user, opts.hit_id, callback)
     # List of user's past items completed (not specific to the current hit)
-    userItemList: (callback) ->
-      TaskSet.aggregate([{$match: {user:user}},
-        {$project:{"tasks.item.id":1}},
-        {$unwind : "$tasks"},
-        {$group: {_id:"$tasks.item.id"}}]
-      ).exec(callback)
+    userItemList: (callback) -> TaskSet.userItemList(opts.user, callback)
     # Load HIT info
-    hit: (callback) ->
-      Hit.find({_id: ObjectId(hit_id)}, (err, result) ->
-        if result.length is 0 then return callback("No matching hit", result)
-        callback(err, result[0])
-      )
+    hit: (callback) -> Hit.findOne({_id: ObjectId(opts.hit_id)}, callback)
   },
-  # Pass (err, results) directly to the callback, which
-  # will send it down the waterfall
   callback
   )
 
@@ -63,7 +54,6 @@ getCondition = (obj, callback) ->
 
   switch obj.condition
     when 'feedback'
-      '''TODO get user feedback and add to obj'''
       callback('Feedback condition not yet designed', obj)
     else
       callback(null, obj)
@@ -74,9 +64,11 @@ getCondition = (obj, callback) ->
 # 3.1 Determine with items have already been done enough
 getMaxedItems = (obj, callback) ->
   if obj.condition is 'teaching'
-    callback(obj, null)
+    callback(null, obj)
+  console.log "!!"+obj.opts.hit_id+"!!"
   # Get a list of all currentHIT items completed
-  TaskSet.aggregate({$match: {hit_id:hit_id}},
+  TaskSet#.find({hit_id:hit_id}
+    .aggregate({$match:{hit_id:obj.opts.hit_id}},
                   {$project:{"tasks.item.id":1}},
                   {$unwind : "$tasks"},
                   # Matching on task item id *after* unwinding
@@ -85,25 +77,39 @@ getMaxedItems = (obj, callback) ->
                   # We want to know which tasks have already be done max times
                   {$match:{count:{$gte:obj.hit.setsPerItem}}}
   ).exec((err, results) ->
+      if (err) then return callback(err, obj)
       obj.maxed = (result._id for result in results)
-      callback(obj, null)
+      callback(null, obj)
   )
+  return
 
 sampleTaskItems = (obj, callback) ->
   switch obj.condition
     when 'teaching'
       ''' TODO get teaching set '''
-      callback(obj, "Teaching set not ready yet")
+      callback("Teaching set not ready yet", bj)
     when 'fast'
       ''' TODO Prep larger set for fast completion '''
-      callback(obj, "Fast set not ready yet")
+      callback("Fast set not ready yet", obj)
     when 'basic'
       ''' doStuff '''
-      console.log obj.hit.items
-      callback(obj, null)
+      excludes = obj.maxed.concat (item._id for item in obj.userItemList)
+      candidates = _.difference(obj.hit.items, excludes)
+      itemSampleIds = _.sample(candidates, if obj.hit.maxSetSize then obj.hit.maxSetSize else 200)
+      # Load Item model
+      ItemModel = require('./models/' + obj.hit.itemModel)
+      # Query info for all the sampled items
+      ItemModel.find({_id:$in:itemSampleIds}, (err, results) ->
+        if (err) then return callback(err, obj)
+        console.log results
+        #obj.sample = results
+        callback(null, obj)
+      )
       # Lock in-progress files
 
       # If there are no tasks left,
       # doStuff()
       # Find items which are *not* is set of items completed by user and
       # in set where HIT(CompletedItems).item.Count is less than hit.setsPerItem
+
+module.exports = loadHIT
