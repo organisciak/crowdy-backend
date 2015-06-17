@@ -17,7 +17,8 @@ loadHIT = (opts, callback) ->
       getBasicInfo,
       getCondition,
       getMaxedItems,
-      sampleTaskItems
+      sampleTaskItems,
+      prepareTaskSet
     ],
     callback #Send back to the calling script
     )
@@ -36,7 +37,7 @@ getBasicInfo = (opts, callback) ->
     # Load HIT info
     hit: (callback) -> Hit.findOne({_id: ObjectId(opts.hit_id)}, callback)
     # Clear locks
-    locksCleared: (callback) -> taskSetSchema.clearLocks(opts.user, callback)
+    locksCleared: (callback) -> TaskSet.clearLocks(opts.user, callback)
   },
   callback
   )
@@ -94,16 +95,50 @@ sampleTaskItems = (obj, callback) ->
       # Load Item model
       ItemModel = require('./models/' + obj.hit.itemModel)
       # Query info for all the sampled items
-      ItemModel.find({_id:$in:itemSampleIds}, (err, results) ->
-        if (err) then return callback(err, obj)
-        obj.sample = results
-        callback(null, obj)
-      )
-      # Lock in-progress files
+      ItemModel.find({_id:$in:itemSampleIds},
+        (if obj.opts.itemProjection then obj.opts.itemProjection else {}),
+        (err, results) ->
+          obj.sample = results
+          callback(err, obj)
+        )
 
-      # If there are no tasks left,
-      # doStuff()
-      # Find items which are *not* is set of items completed by user and
-      # in set where HIT(CompletedItems).item.Count is less than hit.setsPerItem
+prepareTaskSet = (obj, callback) ->
+
+  tasks = _.map(obj.sample, (task) ->
+    type: obj.hit.type
+    item:
+      type: obj.hit.itemModel
+      id: task.id
+    timeSpent: null
+    contribution: null
+  )
+
+  obj.taskset =
+    _id: obj.opts.taskset_id
+    lock: if obj.opts.lock then true else false
+    user: obj.opts.user
+    hit_id: obj.opts.hit_id
+    time:
+      start:(new Date())
+      submit: null
+      workTime: null
+    feedback:
+      form: null
+      satisfaction: null
+    tasks:tasks
+      
+  # Lock in-progress files if locking was requested
+  if obj.opts.lock
+    taskset = new TaskSet(obj.taskset)
+    taskset.save((err, res) ->
+      callback(err, obj)
+    )
+  else
+    callback(null, obj)
+
+# If there are no tasks left,
+# doStuff()
+# Find items which are *not* is set of items completed by user and
+# in set where HIT(CompletedItems).item.Count is less than hit.setsPerItem
 
 module.exports = loadHIT
