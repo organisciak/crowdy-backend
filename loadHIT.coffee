@@ -1,32 +1,26 @@
-# Return the proper information to angular
+# Return the proper information for Angular
+# This module only runs the Mongo gathering
+# logic
+# Usage: loadHIT({user:..,hit_id:..,lock:..}, callback)
 #
 mongoose = require 'mongoose'
 async = require 'async'
 _ = require 'underscore'
-#mongoose.connect 'mongodb://localhost/test'
-#mongoose.connect 'mongodb://localhost/test'
-#db = mongoose.connection
 
 TaskSet = require './models/taskset'
 Hit = require './models/hit'
 ObjectId = mongoose.Types.ObjectId
 
-loadHIT = (opts) ->
-  #db.on('error', console.error.bind(console, 'connection error:'))
-
-  #db.once('open', () ->
+loadHIT = (opts, callback) ->
     async.waterfall([
       (cb) -> cb(null, opts) # Pipe opts to first func in waterfal
       getBasicInfo,
       getCondition,
       getMaxedItems,
       sampleTaskItems
-    ], (err, results) ->
-      if (err) then return console.error err
-      console.log "Waterfall done"
-      console.log results
+    ],
+    callback #Send back to the calling script
     )
-  #)
 
 # 1. Count how many taskSets this user has done in this condition
 # Also fetch HIT info, since it can be done asynchronously
@@ -41,6 +35,8 @@ getBasicInfo = (opts, callback) ->
     userItemList: (callback) -> TaskSet.userItemList(opts.user, callback)
     # Load HIT info
     hit: (callback) -> Hit.findOne({_id: ObjectId(opts.hit_id)}, callback)
+    # Clear locks
+    locksCleared: (callback) -> taskSetSchema.clearLocks(opts.user, callback)
   },
   callback
   )
@@ -65,7 +61,6 @@ getCondition = (obj, callback) ->
 getMaxedItems = (obj, callback) ->
   if obj.condition is 'teaching'
     callback(null, obj)
-  console.log "!!"+obj.opts.hit_id+"!!"
   # Get a list of all currentHIT items completed
   TaskSet#.find({hit_id:hit_id}
     .aggregate({$match:{hit_id:obj.opts.hit_id}},
@@ -101,8 +96,7 @@ sampleTaskItems = (obj, callback) ->
       # Query info for all the sampled items
       ItemModel.find({_id:$in:itemSampleIds}, (err, results) ->
         if (err) then return callback(err, obj)
-        console.log results
-        #obj.sample = results
+        obj.sample = results
         callback(null, obj)
       )
       # Lock in-progress files
