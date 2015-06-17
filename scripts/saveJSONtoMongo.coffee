@@ -33,5 +33,6 @@ db.once('open', (callback) ->
     if (err) then return console.error(err)
     console.log "Successfully saved"
     console.log res
+    mongoose.disconnect()
   )
 )

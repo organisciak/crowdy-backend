@@ -10,6 +10,7 @@ argv = require('yargs').argv
 path = require 'path'
 async = require 'async'
 _ = require 'underscore'
+mongoose = require 'mongoose'
 
 Pin = require '../models/pin'
 
