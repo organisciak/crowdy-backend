@@ -18,7 +18,8 @@ loadHIT = (opts, callback) ->
       getCondition,
       getMaxedItems,
       sampleTaskItems,
-      prepareTaskSet
+      prepareTaskSet,
+      cleanForFrontEnd
     ],
     callback #Send back to the calling script
     )
@@ -135,6 +136,28 @@ prepareTaskSet = (obj, callback) ->
     )
   else
     callback(null, obj)
+
+cleanForFrontEnd = (obj, callback) ->
+   # Redundant
+  delete obj.opts
+  delete obj.maxed
+  # Not needed by front end
+  delete obj.userItemList
+  delete obj.locksCleared
+  delete obj.hit
+  # Easier access on front-end
+  # Add item information to taskSet.tasks[] as .meta field
+  # This information shouldn't be saved to Mongo, since we already have it
+  sampleRef = _.object(_.map(obj.sample, ((obj) -> obj._id)), obj.sample)
+  tasks = obj.taskset.tasks
+  tasks = tasks.map((task)->
+    task.meta = sampleRef[task.item.id]
+    task
+  )
+  delete obj.sample
+  callback(null, obj)
+
+
 
 # If there are no tasks left,
 # doStuff()
