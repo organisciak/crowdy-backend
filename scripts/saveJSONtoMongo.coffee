@@ -23,8 +23,7 @@ filepath = path.resolve(process.cwd(), argv.json)
 input = require(filepath)
 
 # Save to DB
-mongoose.connect('mongodb://localhost/test')
-db = mongoose.connection
+db = mongoose.createConnection('mongodb://localhost/test')
 db.on('error', console.error.bind(console, 'connection error:'))
 
 db.once('open', (callback) ->
@@ -33,6 +32,6 @@ db.once('open', (callback) ->
     if (err) then return console.error(err)
     console.log "Successfully saved"
     console.log res
-    mongoose.disconnect()
+    db.close()
   )
 )

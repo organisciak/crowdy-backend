@@ -1,4 +1,5 @@
 var mongoose = require('mongoose');
+var db = mongoose.createConnection('mongodb://localhost/test');
 
 var hitSchema = mongoose.Schema({
     name: String,
@@ -16,6 +17,6 @@ var hitSchema = mongoose.Schema({
     timer: { type: Number, default: null },
 });
 
-var Hit = mongoose.model('Hit', hitSchema);
+var Hit = db.model('Hit', hitSchema);
 
 module.exports = Hit; 

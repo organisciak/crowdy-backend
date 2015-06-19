@@ -1,4 +1,5 @@
 var mongoose = require('mongoose');
+var db = mongoose.createConnection('mongodb://localhost/test');
 
 var pinSchema = mongoose.Schema({
     _id:Number,
@@ -35,6 +36,6 @@ var pinSchema = mongoose.Schema({
     }
 });
 
-var Pin = mongoose.model('Pin', pinSchema);
+var Pin = db.model('Pin', pinSchema);
 
 module.exports = Pin;

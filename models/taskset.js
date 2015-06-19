@@ -1,5 +1,7 @@
 var mongoose = require('mongoose');
 
+var db = mongoose.createConnection('mongodb://localhost/test');
+
 // Define Model Schema
 var taskSetSchema = mongoose.Schema({
     _id: String, // What MTurk refers to as a HITId
@@ -69,6 +71,6 @@ taskSetSchema.statics.userItemList = function(user, callback){
 
 // Create Model and Export
 
-var TaskSet = mongoose.model('tasksets', taskSetSchema);
+var TaskSet = db.model('tasksets', taskSetSchema);
 
 module.exports = TaskSet; 

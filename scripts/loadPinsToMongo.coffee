@@ -10,7 +10,6 @@ argv = require('yargs').argv
 path = require 'path'
 async = require 'async'
 _ = require 'underscore'
-mongoose = require 'mongoose'
 
 Pin = require '../models/pin'
 
@@ -41,8 +40,7 @@ processPin = (pin) ->
     console.log(res)
   )
 
-mongoose.connect('mongodb://localhost/test')
-db = mongoose.connection
+db = mongoose.createConnection('mongodb://localhost/test')
 db.on('error', console.error.bind(console, 'connection error:'))
 
 db.once('open', (callback) ->
