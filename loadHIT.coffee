@@ -39,8 +39,7 @@ getBasicInfo = (opts, callback) ->
     hit: (callback) -> Hit.findOne({_id: ObjectId(opts.hit_id)}, callback)
     # Clear locks
     locksCleared: (callback) -> TaskSet.clearLocks(opts.user, callback)
-  },
-  callback
+  }, callback
   )
 
 # 2. Determine the current condition
@@ -96,8 +95,12 @@ sampleTaskItems = (obj, callback) ->
       # Load Item model
       ItemModel = require('./models/' + obj.hit.itemModel)
       # Query info for all the sampled items
+      if obj.hit.itemModel is 'pin'
+        projection = { url:1, description:1, title:1, image:1, likes:1, repins:1 }
+      else
+        projection = {}
       ItemModel.find({_id:$in:itemSampleIds},
-        (if obj.opts.itemProjection then obj.opts.itemProjection else {}),
+        projection,
         (err, results) ->
           obj.sample = results
           callback(err, obj)
