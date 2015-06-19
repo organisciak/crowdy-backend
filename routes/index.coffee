@@ -17,7 +17,7 @@ router.get('/json', (req, res) ->
 router.get('/hit', (req, res) ->
 
   mongoose = require 'mongoose'
-  db = mongoose.createConnection 'mongodb://localhost/test'
+  db = mongoose.connection
   loadHIT = require '../loadHIT'
 
   # Expected query params:
@@ -31,19 +31,14 @@ router.get('/hit', (req, res) ->
     if not req.query.hasOwnProperty key
       res.status(500)
       res.render('error', { error:{status: 500}, message: 'Missing parameter:'+key})
-      db.close()
       return
 
-  db.on('error', console.error.bind(console, 'connection error:'))
-  db.once('open', () ->
-    loadHIT(req.query, (err, results)->
-      if (err)
-        res.status(err.status || 500)
-        res.render('error', { error: err })
-      else
-        res.jsonp(results)
-      db.close()
-    )
+  loadHIT(req.query, (err, results)->
+    if (err)
+      res.status(err.status || 500)
+      res.render('error', { error: err })
+    else
+      res.jsonp(results)
   )
 )
 
