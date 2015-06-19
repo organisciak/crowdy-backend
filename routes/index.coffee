@@ -17,24 +17,32 @@ router.get('/json', (req, res) ->
 router.get('/hit', (req, res) ->
 
   mongoose = require 'mongoose'
-  mongoose.connect 'mongodb://localhost/test'
-  db = mongoose.connection
+  db = mongoose.createConnection 'mongodb://localhost/test'
   loadHIT = require '../loadHIT'
 
-  opts = {
-    user : "TEST"
-    taskset_id: "TEST"                  # What MTurk calls the HIT_id
-    hit_id : "557df4899b962f181de3da0c" # The mongo ID for the hit item
-    lock : true
-    # Limit fields to return from item sample
-    itemProjection: { url:1, description:1, title:1, image:1, likes:1, repins:1 }
-  }
+  # Expected query params:
+  # USER: user_id
+  # taskset_id: the HITid from MTurk
+  # hit_id: the unique hit id assigned when the task is uploaded
+  # lock: boolean value telling server to lock the returned items or not
+  #
+  # validate input
+  for key in ['user', 'taskset_id', 'hit_id', 'lock']
+    if not req.query.hasOwnProperty key
+      res.status(500)
+      res.render('error', { error:{status: 500}, message: 'Missing parameter:'+key})
+      db.close()
+      return
 
   db.on('error', console.error.bind(console, 'connection error:'))
   db.once('open', () ->
-    loadHIT(opts, (err, results)->
-      res.jsonp(results)
-      mongoose.disconnect()
+    loadHIT(req.query, (err, results)->
+      if (err)
+        res.status(err.status || 500)
+        res.render('error', { error: err })
+      else
+        res.jsonp(results)
+      db.close()
     )
   )
 )
