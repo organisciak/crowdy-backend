@@ -8,6 +8,8 @@ var app = require('../app');
 var debug = require('debug')('crowdy-backend:server');
 var http = require('http');
 var mongoose = require('mongoose');
+var config = require('config');
+var db_server = 'mongodb://' + config.get('db.host') + '/' + config.get('db.name');
 
 /**
  * Get port from environment and store in Express.
@@ -37,7 +39,6 @@ mongoose.connection.on('disconnected', function () {
 
 // Connect
 try {
-  db_server = 'mongodb://localhost/test'
   var options = { server: { socketOptions: { keepAlive: 1, connectTimeoutMS: 30000 } }, 
                 replset: { socketOptions: { keepAlive: 1, connectTimeoutMS : 30000 } } };
   mongoose.connect(db_server, options);

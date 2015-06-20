@@ -10,6 +10,8 @@ argv = require('yargs').argv
 path = require 'path'
 async = require 'async'
 _ = require 'underscore'
+config = require 'config'
+db_server = 'mongodb://' + config.get('db.host') + '/' + config.get('db.name')
 
 Pin = require '../models/pin'
 
@@ -17,7 +19,6 @@ Pin = require '../models/pin'
 if !argv.pinData then return console.error("No file specified.")
 filepath = path.resolve(process.cwd(), argv.pinData)
 pinData = require(filepath)
-
 
 processPin = (pin) ->
   # Prepare Pin in proper format
@@ -40,11 +41,14 @@ processPin = (pin) ->
     console.log(res)
   )
 
-db = mongoose.createConnection('mongodb://localhost/test')
-db.on('error', console.error.bind(console, 'connection error:'))
+mongoose.connect db_server
+db = mongoose.connection
 
 db.once('open', (callback) ->
-    async.each(pinData, processPin, (err) -> console.error(err))
+    async.each(pinData, processPin, (err) ->
+      if err then console.error(err)
+      db.close()
+    )
 )
 
 ## If PinJoinData is available

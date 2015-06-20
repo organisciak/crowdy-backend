@@ -8,6 +8,8 @@
 
 mongoose = require 'mongoose'
 path = require 'path'
+config = require 'config'
+db_server = 'mongodb://' + config.get('db.host') + '/' + config.get('db.name')
 
 # Load Args
 argv = require('yargs')
@@ -23,7 +25,8 @@ filepath = path.resolve(process.cwd(), argv.json)
 input = require(filepath)
 
 # Save to DB
-db = mongoose.createConnection('mongodb://localhost/test')
+mongoose.connect db_server
+db = mongoose.connection
 db.on('error', console.error.bind(console, 'connection error:'))
 
 db.once('open', (callback) ->

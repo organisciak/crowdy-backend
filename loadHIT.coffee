@@ -119,7 +119,7 @@ prepareTaskSet = (obj, callback) ->
 
   # If taskset Id is "TEST", generate a unique one.
   if obj.opts.taskset_id is "TEST"
-    obj.opts.taskset_id ==  "TEST" + Math.floor(Math.random()*Math.pow(10,10))
+    obj.opts.taskset_id =  "TEST" + Math.floor(Math.random()*Math.pow(10,10))
     console.log "Generating unique taskset_id: " + obj.opts.taskset_id
 
   obj.taskset =
