@@ -4,7 +4,7 @@
   "description": "Logic for serving Crowdy tasks",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www",
+    "start": "nodemon ./bin/www",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -35,6 +35,7 @@
     "morgan": "~1.5.3",
     "serve-favicon": "~2.2.1",
     "underscore": "^1.8.3",
-    "yargs": "^3.10.0"
+    "yargs": "^3.10.0",
+    "mongoose": "~4.0.5"
   }
 }
