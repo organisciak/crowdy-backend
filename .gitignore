@@ -1,2 +1,5 @@
 routes/*js
 scripts/*js
+loadHIT.js
+saveCompletedTaskset.js
+returnTask.js
