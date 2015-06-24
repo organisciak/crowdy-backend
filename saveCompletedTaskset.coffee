@@ -6,6 +6,7 @@ TaskSet = require './models/taskset'
 
 saveCompletedTaskset = (tasksetData, callback) ->
   tasksetData.lock = false
+  tasksetData.status = 'reviewable'
   tasksetData.time.submit = new Date()
   tasksetData.time.workTime = tasksetData.time.submit - new Date(tasksetData.time.start)
   
