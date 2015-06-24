@@ -1,0 +1,3 @@
+[submodule "crowdy"]
+	path = crowdy
+	url = https://github.com/organisciak/crowdy.git
