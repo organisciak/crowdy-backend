@@ -13,7 +13,7 @@ ObjectId = mongoose.Types.ObjectId
 
 loadHIT = (opts, callback) ->
     async.waterfall([
-      (cb) -> cb(null, opts) # Pipe opts to first func in waterfal
+      (cb) -> cb(null, opts) # Pipe opts to first func in waterfall
       getBasicInfo,
       getCondition,
       getMaxedItems,
@@ -44,6 +44,7 @@ getBasicInfo = (opts, callback) ->
 
 # 2. Determine the current condition
 getCondition = (obj, callback) ->
+  console.log obj.userItemList
   if obj.countUserHIT is 1
     obj.condition = obj.hit.condition.firstTask
   else
@@ -62,6 +63,14 @@ getCondition = (obj, callback) ->
 getMaxedItems = (obj, callback) ->
   if obj.condition is 'teaching'
     callback(null, obj)
+    return
+
+  if obj.opts.user == 'PREVIEWUSER'
+    console.log "Preview user, no maxed items"
+    obj.maxed = []
+    callback(null,obj)
+    return
+
   # Get a list of all currentHIT items completed
   TaskSet#.find({hit_id:hit_id}
     .aggregate({$match:{hit_id:obj.opts.hit_id}},
@@ -89,8 +98,11 @@ sampleTaskItems = (obj, callback) ->
       callback("Fast set not ready yet", obj)
     when 'basic'
       ''' doStuff '''
-      excludes = obj.maxed.concat (item._id for item in obj.userItemList)
-      candidates = _.difference(obj.hit.items, excludes)
+      if obj.opts.user == 'PREVIEWUSER'
+        candidates = obj.hit.items
+      else
+        excludes = obj.maxed.concat (item._id for item in obj.userItemList)
+        candidates = _.difference(obj.hit.items, excludes)
       itemSampleIds = _.sample(candidates, if obj.hit.maxSetSize then obj.hit.maxSetSize else 200)
       # Load Item model
       ItemModel = require('./models/' + obj.hit.itemModel)
@@ -107,7 +119,6 @@ sampleTaskItems = (obj, callback) ->
         )
 
 prepareTaskSet = (obj, callback) ->
-
   tasks = _.map(obj.sample, (task) ->
     type: obj.hit.type
     item:
@@ -124,7 +135,8 @@ prepareTaskSet = (obj, callback) ->
 
   obj.taskset =
     _id: obj.opts.taskset_id
-    lock: if obj.opts.lock then true else false
+    lock: obj.opts.lock
+    assignment_id: obj.opts.assignment_id,
     user: obj.opts.user
     hit_id: obj.opts.hit_id
     time:
