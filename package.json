@@ -4,7 +4,7 @@
   "description": "Logic for serving Crowdy tasks",
   "private": true,
   "scripts": {
-    "start": "nodemon ./bin/www",
+    "start": "PORT=8080 nodemon ./bin/www",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

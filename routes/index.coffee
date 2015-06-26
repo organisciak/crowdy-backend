@@ -1,8 +1,9 @@
 express = require('express')
 router = express.Router()
 
-# GET home page.
-router.get('/', (req, res, next) ->
+# /index.html should defer to static folder
+
+router.get('/test', (req, res, next) ->
   res.render('index', { title: 'Express' })
 )
 

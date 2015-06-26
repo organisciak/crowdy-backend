@@ -22,7 +22,7 @@ app.set('port', port);
  * Create HTTP server.
  */
 
-console.log("Creating server at"+port);
+console.log("Creating server at " + port);
 var server = http.createServer(app);
 
 /**
@@ -30,20 +30,20 @@ var server = http.createServer(app);
  */
 
 // If the connection throws an error
-mongoose.connection.on("error", function(err) {
-  console.error('Failed to connect to DB ' + db_server + ' on startup ', err);
-});
+//mongoose.connection.on("error", function(err) {
+//  console.error('Failed to connect to DB ' + db_server + ' on startup ', err);
+//});
 // When the connection is disconnected
-mongoose.connection.on('disconnected', function () {
-  console.log('Mongoose default connection to DB :' + db_server + ' disconnected');
-});
+//mongoose.connection.on('disconnected', function () {
+//  console.log('Mongoose default connection to DB :' + db_server + ' disconnected');
+//});
 
 // Connect
 try {
   var options = { server: { socketOptions: { keepAlive: 1, connectTimeoutMS: 30000 } }, 
                 replset: { socketOptions: { keepAlive: 1, connectTimeoutMS : 30000 } } };
   mongoose.connect(db_server, options);
-  console.log("Trying to connect to DB " + db_server);
+  console.log("Connected to DB " + db_server);
 } catch (err) {
   console.log("Server initialization failed " , err.message);
 }
@@ -57,24 +57,28 @@ server.on('error', onError);
 server.on('listening', onListening);
 
 // Kill processes gracefully
-process.on('SIGTERM', closeProcess);
-process.on('SIGINT', closeProcess);
-process.on('SIGUSR2', closeProcess);
+//process.once('SIGTERM', closeProcess);
+//process.once('SIGINT', closeProcess);
+process.once('SIGUSR2', closeProcess);
 
 function closeProcess() {
   console.log("Closing");
   // Close Mongo Connection
   mongoose.connection.close(function () {
-    console.log('Mongoose default connection with DB :' + db_server + ' is disconnected through app termination');
+    console.log('Mongoose default connection with DB :' + db_server + ' is closed through app termination');
     // Close Server
     server.close();
+    process.kill(process.pid, 'SIGUSR2');
   });
 };
 
 // Cleanup after close
-server.on('close', function() {
+  server.on('close', function() {
   console.log("Closed");
-  process.exit(0);
+  // The commented out clean exit confuses nodemon into thinking it doesn't want
+  // a restart. process.kill works better
+  //process.kill(process.pid, 'SIGUSR2');
+  //process.exit(0);
 });
 
 /**
