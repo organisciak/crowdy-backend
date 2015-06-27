@@ -50,9 +50,14 @@ getCondition = (obj, callback) ->
   else
     obj.condition = obj.hit.condition.laterTasks
 
+  # Feedback condition needs to retrieval extra information, might as well do it now.
+  # TODO Ideally we'd do it asynchronously with the next step in the waterfall, since
+  # get MaxedItems doesn't depend on this step
   switch obj.condition
     when 'feedback'
       callback('Feedback condition not yet designed', obj)
+      # Psuedo-code
+      #
     else
       callback(null, obj)
 
@@ -62,6 +67,7 @@ getCondition = (obj, callback) ->
 # 3.1 Determine with items have already been done enough
 getMaxedItems = (obj, callback) ->
   if obj.condition is 'teaching'
+    ''' Don't need maxed conditions because teaching set is pre-determined '''
     callback(null, obj)
     return
 
@@ -89,34 +95,41 @@ getMaxedItems = (obj, callback) ->
   return
 
 sampleTaskItems = (obj, callback) ->
-  switch obj.condition
-    when 'teaching'
-      ''' TODO get teaching set '''
-      callback("Teaching set not ready yet", bj)
-    when 'fast'
-      ''' TODO Prep larger set for fast completion '''
-      callback("Fast set not ready yet", obj)
-    when 'basic'
-      ''' doStuff '''
-      if obj.opts.user == 'PREVIEWUSER'
-        candidates = obj.hit.items
-      else
-        excludes = obj.maxed.concat (item._id for item in obj.userItemList)
-        candidates = _.difference(obj.hit.items, excludes)
-      itemSampleIds = _.sample(candidates, if obj.hit.maxSetSize then obj.hit.maxSetSize else 200)
-      # Load Item model
-      ItemModel = require('./models/' + obj.hit.itemModel)
-      # Query info for all the sampled items
-      if obj.hit.itemModel is 'pin'
-        projection = { url:1, description:1, title:1, image:1, likes:1, repins:1 }
-      else
-        projection = {}
-      ItemModel.find({_id:$in:itemSampleIds},
-        projection,
-        (err, results) ->
-          obj.sample = results
-          callback(err, obj)
-        )
+  # Load Item model
+  ItemModel = require('./models/' + obj.hit.itemModel)
+
+  if obj.condition is 'teaching'
+    ''' TODO get teaching set '''
+    callback("Teaching set not ready yet", bj)
+  
+  if obj.condition is 'fast'
+    ''' TODO Prep larger set for fast completion '''
+    callback("Fast set not ready yet", obj)
+
+  if obj.condition is 'basic' or 'fast'
+    if obj.opts.user == 'PREVIEWUSER'
+      candidates = obj.hit.items
+    else
+      excludes = obj.maxed.concat (item._id for item in obj.userItemList)
+      candidates = _.difference(obj.hit.items, excludes)
+
+    # Fast condition shouldn't specific a max size
+    if obj.condition is 'fast' and obj.hit.maxSetSize
+      delete obj.hit.maxSetSize
+
+    itemSampleIds = _.sample(candidates, if obj.hit.maxSetSize then obj.hit.maxSetSize else 200)
+
+    # Query info for all the sampled items
+    if obj.hit.itemModel is 'pin'
+      projection = { url:1, description:1, title:1, image:1, likes:1, repins:1 }
+    else
+      projection = {}
+    ItemModel.find({_id:$in:itemSampleIds},
+      projection,
+      (err, results) ->
+        obj.sample = results
+        callback(err, obj)
+      )
 
 prepareTaskSet = (obj, callback) ->
   tasks = _.map(obj.sample, (task) ->
