@@ -3,9 +3,9 @@
 		"hit_id": "5588b4fb705dc7b70b5631a5"
 	},
 	"url": "https://crowdycrowdy.com/#/tag",
-	"title": "Sample HIT8",
-	"description": "Tag",
-	"keywords": ["a", "b", "c"],
+	"title": "Online tagging",
+	"description": "Tag online images with discriptive words or phrases",
+	"keywords": ["tagging", "images", "image tagging"],
 	"frame_height": 500,
 	"amount": 0.05,
 	"annotation": "dissertation/data/turk/pin-tagging-basic-basic1.json",
