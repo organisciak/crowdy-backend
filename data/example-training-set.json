@@ -1,0 +1,64 @@
+{
+	"hit_id":"557a540429ffdf6c18cb91d5",
+	"tasks":[
+	{
+		"type":"Image tagging",
+		"item":{ "type": "pin", "id":"237846424040203400"},
+		"training": {
+			"contribution": {
+				"great":[],
+				"good": [],
+				"okay":[],
+				"poor":[]
+			},
+			"annotation": {
+				"general": "The lesson of this image is...",
+				"great": null,
+				"good": null,
+				"okay": null,
+				"poor": null
+			}
+		}
+	},
+	{
+		"type":"Image tagging",
+		"item":{ "type": "pin", "id":"237846424040203400"},
+		"training": {
+			"contribution": {
+				"great":[],
+				"good": [],
+				"okay":[],
+				"poor":[]
+			},
+			"annotation": {
+				"general": "The lesson of this image is...",
+				"great": null,
+				"good": null,
+				"okay": null,
+				"poor": null
+			}
+		}
+	},
+	{
+		"type":"Image tagging",
+		"item":{ "type": "pin", "id":"237846424040203400"},
+		"training": {
+			"contribution": {
+				"great":[],
+				"good": [],
+				"okay":[],
+				"poor":[]
+			},
+			"annotation": {
+				"general": "The lesson of this image is...",
+				"great": null,
+				"good": null,
+				"okay": null,
+				"poor": null
+			}
+		}
+	}
+	]
+}
+
+ 
