@@ -33,6 +33,6 @@ var trainingSetSchema = mongoose.Schema({
 
 // Create Model and Export
 
-var TrainingSet = mongoose.connection.model('trainingsets', trainingSetSchema);
+var TrainingSet = mongoose.connection.model('trainingset', trainingSetSchema);
 
 module.exports = TrainingSet; 
