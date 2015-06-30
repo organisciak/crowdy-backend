@@ -1,4 +1,4 @@
-import boto.mturk.connection
+from boto.mturk import connection, qualification, price, question
 import urllib
 import json
 import logging
@@ -13,23 +13,37 @@ def main():
     sandbox_host = 'mechanicalturk.sandbox.amazonaws.com'
     real_host = 'mechanicalturk.amazonaws.com'
 
-    mturk = boto.mturk.connection.MTurkConnection(
+    mturk = connection.MTurkConnection(
         host=sandbox_host,
         debug=1  # debug = 2 prints out all requests.
     )
 
-    questionform = boto.mturk.question.ExternalQuestion(
+    # Question
+    questionform = question.ExternalQuestion(
         "%s?%s" % (config['url'],
                    urllib.urlencode(config['params'])),
         config['frame_height'])
 
+    # Qualifications
+    quals = qualification.Qualifications()
+    quals.add(qualification.LocaleRequirement(
+        "EqualTo", "US", required_to_preview=True)
+        )
+    quals.add(qualification.NumberHitsApprovedRequirement(
+        'GreaterThanOrEqualTo', 20, required_to_preview=True)
+        )
+    quals.add(qualification.PercentAssignmentsApprovedRequirement(
+        'GreaterThanOrEqualTo', 95, required_to_preview=True)
+        )
+
     hit_type = mturk.register_hit_type(
         title=config['title'],
         description=config['description'],
-        reward=boto.mturk.price.Price(config['amount']),
+        reward=price.Price(config['amount']),
         duration=60*60,  # in seconds
         keywords=config['keywords'],
-        approval_delay=1.5*24*60*60  # seconds
+        approval_delay=1.5*24*60*60,  # seconds
+        qual_req=quals
     )
 
     assert hit_type.status
