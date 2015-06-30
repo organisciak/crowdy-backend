@@ -36,7 +36,12 @@ getBasicInfo = (opts, callback) ->
     # List of user's past items completed (not specific to the current hit)
     userItemList: (callback) -> TaskSet.userItemList(opts.user, callback)
     # Load HIT info
-    hit: (callback) -> Hit.findOne({_id: ObjectId(opts.hit_id)}, callback)
+    hit: (callback) -> Hit.findOne({_id: ObjectId(opts.hit_id)}, (err, results) ->
+      if results is null
+        callback("HIT not found", null)
+      else
+        callback(err, results)
+    ),
     # Clear locks
     locksCleared: (callback) -> TaskSet.clearLocks(opts.user, callback)
   }, callback
@@ -44,7 +49,6 @@ getBasicInfo = (opts, callback) ->
 
 # 2. Determine the current condition
 getCondition = (obj, callback) ->
-  console.log obj.userItemList
   if obj.countUserHIT is 1
     obj.condition = obj.hit.condition.firstTask
   else
@@ -128,7 +132,10 @@ sampleTaskItems = (obj, callback) ->
       projection,
       (err, results) ->
         obj.sample = results
-        callback(err, obj)
+        if obj.sample.length is 0
+          callback("No tasks available.", null)
+        else
+          callback(err, obj)
       )
 
 prepareTaskSet = (obj, callback) ->

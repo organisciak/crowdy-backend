@@ -30,16 +30,15 @@ router.get('/hit', (req, res) ->
   # validate input
   for key in ['user', 'taskset_id', 'hit_id', 'lock']
     if not req.query.hasOwnProperty key
-      res.status(500)
-      res.render('error', { error:{status: 500}, message: 'Missing parameter:'+key})
+      res.jsonp({ status: 500, message: 'Missing parameter:'+key})
       return
 
   loadHIT(req.query, (err, results)->
     if (err)
-      res.status(err.status || 500)
-      res.render('error', { error: err })
+      res.jsonp({ status:500, message: err })
     else
       res.jsonp(results)
+    return
   )
 )
 
