@@ -4,10 +4,10 @@
 	},
 	"url": "https://crowdycrowdy.com/#/tag/basic",
 	"title": "Tag online images",
-	"description": "Tag online images with discriptive words or phrases",
+	"description": "Tag online images with descriptive words or phrases",
 	"keywords": ["tagging", "images", "image tagging"],
-	"frame_height": 500,
-	"amount": 0.05,
+	"frame_height": 650,
+	"amount": 0.50,
 	"annotation": "dissertation/data/turk/pin-tagging-basic-basic1.json",
 	"max_assignments": 5,
 	"num_hits": 10
