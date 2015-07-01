@@ -169,7 +169,7 @@ prepareTaskSet = (obj, callback) ->
     tasks:tasks
       
   # Lock in-progress files if locking was requested
-  if obj.opts.lock is true and obj.opts.user isnt "PREVIEWUSER"
+  if (obj.opts.lock is true) and (obj.opts.user isnt "PREVIEWUSER")
     taskset = new TaskSet(obj.taskset)
     taskset.save((err, res) ->
       callback(err, obj)

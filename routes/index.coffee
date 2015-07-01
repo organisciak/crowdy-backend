@@ -33,6 +33,7 @@ router.get('/hit', (req, res) ->
       res.jsonp({ status: 500, message: 'Missing parameter:'+key})
       return
 
+  req.query.lock = if req.query.lock is 'true' then true else false
   loadHIT(req.query, (err, results)->
     if (err)
       res.jsonp({ status:500, message: err })
