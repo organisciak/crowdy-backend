@@ -7,15 +7,22 @@
 '''
 import boto.mturk.connection
 import logging
+import argparse
+
 
 def main():
     logging.basicConfig(file="expiring-tasks.log", level=logging.INFO)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--production', action='store_true')
+    args = parser.parse_args()
 
-    sandbox_host = 'mechanicalturk.sandbox.amazonaws.com'
-    real_host = 'mechanicalturk.amazonaws.com'
+    if args.production:
+        host = 'mechanicalturk.amazonaws.com'
+    else:
+        host = 'mechanicalturk.sandbox.amazonaws.com'
 
     mturk = boto.mturk.connection.MTurkConnection(
-        host=sandbox_host,
+        host=host,
         debug=1  # debug = 2 prints out all requests.
     )
 
