@@ -28,7 +28,7 @@ def main():
 
     page_hits = mturk.get_all_hits()
     for HIT in page_hits:
-        logging.info("Deleting:"+HIT.HITId+'\t'+HIT.HITTypeId)
+        logging.info("Expiring:"+HIT.HITId+'\t'+HIT.HITTypeId)
         mturk.expire_hit(HIT.HITId)
     return
 
