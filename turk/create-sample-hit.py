@@ -2,19 +2,27 @@ from boto.mturk import connection, qualification, price, question
 import urllib
 import json
 import logging
+import argparse
 
 
 def main():
     logging.basicConfig(file="creating-tasks.log", level=logging.INFO)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('taskFile', type=str, help="JSON of task params")
+    parser.add_argument('--production', action='store_true')
+    parser.add_argument('--no-quals', action='store_true')
+    args = parser.parse_args()
 
-    with open("task1.json", "rb") as task:
+    with open(args.taskFile, "rb") as task:
         config = json.loads(task.read())
 
-    sandbox_host = 'mechanicalturk.sandbox.amazonaws.com'
-    real_host = 'mechanicalturk.amazonaws.com'
+    if args.production:
+        host = 'mechanicalturk.amazonaws.com'
+    else:
+        host = 'mechanicalturk.sandbox.amazonaws.com'
 
     mturk = connection.MTurkConnection(
-        host=sandbox_host,
+        host=host,
         debug=1  # debug = 2 prints out all requests.
     )
 
@@ -26,21 +34,22 @@ def main():
 
     # Qualifications
     quals = qualification.Qualifications()
-    quals.add(qualification.LocaleRequirement(
-        "EqualTo", "US", required_to_preview=True)
-        )
-    quals.add(qualification.NumberHitsApprovedRequirement(
-        'GreaterThanOrEqualTo', 20, required_to_preview=True)
-        )
-    quals.add(qualification.PercentAssignmentsApprovedRequirement(
-        'GreaterThanOrEqualTo', 95, required_to_preview=True)
-        )
+    if not args.no_quals:
+        quals.add(qualification.LocaleRequirement(
+            "EqualTo", "US", required_to_preview=True)
+            )
+        quals.add(qualification.NumberHitsApprovedRequirement(
+            'GreaterThanOrEqualTo', 20, required_to_preview=True)
+            )
+        quals.add(qualification.PercentAssignmentsApprovedRequirement(
+            'GreaterThanOrEqualTo', 95, required_to_preview=True)
+            )
 
     hit_type = mturk.register_hit_type(
         title=config['title'],
         description=config['description'],
         reward=price.Price(config['amount']),
-        duration=60*60,  # in seconds
+        duration=30*60,  # in seconds
         keywords=config['keywords'],
         approval_delay=1.5*24*60*60,  # seconds
         qual_req=quals

@@ -52,8 +52,8 @@ taskSetSchema.statics.clearLocks = function(user, callback) {
         $or:[
             // If the user already has a lock on something else on, unlock it
             {user:user},
-            // If the start time is older than (Now-1h), it's a stale lock
-            {'time.start':{$lte:new Date(new Date()-60*60*1000)}}
+            // If the start time is older than (Now-30m), it's a stale lock
+            {'time.start':{$lte:new Date(new Date()-30*60*1000)}}
         ]
     };
     return this.remove(find_outdated_locks, callback);
