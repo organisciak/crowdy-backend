@@ -1,5 +1,4 @@
 var mongoose = require('mongoose');
-
 // Define Model Schema
 var taskSetSchema = mongoose.Schema({
     _id: String, // What MTurk refers to as a HITId
@@ -9,7 +8,7 @@ var taskSetSchema = mongoose.Schema({
     lock:Boolean,
     // Status to mimic the MTurk status
     // see http://mechanicalturk.typepad.com/blog/2011/04/overview-lifecycle-of-a-hit-.html
-    status:String,
+    status:{type:String},
     user: String, //Should be a hashed version of WorkerId
     hit_id:String, //My unique key for the HIT (Mongo HIT _id, not hitTypeID)
     assignment_id:String,
