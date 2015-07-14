@@ -106,10 +106,6 @@ sampleTaskItems = (obj, callback) ->
     ''' TODO get teaching set '''
     callback("Teaching set not ready yet", bj)
   
-  if obj.condition is 'fast'
-    ''' TODO Prep larger set for fast completion '''
-    callback("Fast set not ready yet", obj)
-
   if obj.condition is 'basic' or 'fast'
     if obj.opts.user == 'PREVIEWUSER'
       candidates = obj.hit.items
@@ -184,7 +180,10 @@ cleanForFrontEnd = (obj, callback) ->
   # Not needed by front end
   delete obj.userItemList
   delete obj.locksCleared
-  delete obj.hit
+  delete obj.hit.items
+  delete obj.hit.setsPerItem
+  delete obj.hit.maxSetSize
+  delete obj.hit.name
   # Easier access on front-end
   # Add item information to taskSet.tasks[] as .meta field
   # This information shouldn't be saved to Mongo, since we already have it
