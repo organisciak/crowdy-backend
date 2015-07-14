@@ -49,6 +49,16 @@ module.exports = function (grunt) {
                 src: ['*.coffee', 'scripts/**/*.coffee', 'models/**/*.coffee', 'routes/**/*.coffee']
             }
         },
+        coffee: {
+            options: {
+                bare: true
+            },
+            app: {
+                expand: true,
+                src: '<%= coffeelint.app.src %>',
+                ext: ".js"
+            }
+        },
         watch: {
             gruntfile: {
                 files: '<%= jshint.gruntfile.src %>',
