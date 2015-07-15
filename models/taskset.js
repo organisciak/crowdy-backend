@@ -47,7 +47,7 @@ taskSetSchema.statics.countUserHIT = function(user, hit_id, callback) {
 
 taskSetSchema.statics.clearLocks = function(user, callback) {
     // Remove tasksets with expired locks 
-    find_outdated_locks = {
+    var find_outdated_locks = {
         lock:true,
         $or:[
             // If the user already has a lock on something else on, unlock it

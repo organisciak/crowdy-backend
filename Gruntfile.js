@@ -26,12 +26,12 @@ module.exports = function (grunt) {
                 curly: true,
                 eqeqeq: true,
                 immed: true,
-                latedef: true,
+                latedef: 'nofunc',
                 newcap: true,
                 noarg: true,
                 sub: true,
                 undef: true,
-                unused: true,
+                unused: false,
                 eqnull: true,
                 browser: true,
                 globals: { jQuery: true },
@@ -41,7 +41,7 @@ module.exports = function (grunt) {
                 src: 'Gruntfile.js'
             },
             app: {
-                src: ['*.js', 'scripts/**/*.js', 'models/**/*.js', 'routes/**/*.js']
+                src: ['models/**/*.js', 'app.js', 'bin/www']
             }
         },
         coffeelint: {
