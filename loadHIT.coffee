@@ -5,7 +5,7 @@
 #
 mongoose = require 'mongoose'
 async = require 'async'
-_ = require 'underscore'
+_ = require 'lodash'
 
 TaskSet = require './models/taskset'
 Hit = require './models/hit'
