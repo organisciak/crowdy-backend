@@ -56,6 +56,10 @@ getCondition = (obj, callback) ->
   else
     obj.condition = obj.hit.condition.laterTasks
 
+  obj.payment = {
+    base: obj.hit.payment,
+    bonus: obj.hit.bonus
+  }
   switch obj.condition
     when 'feedback'
       # Feedback condition needs to retrieval extra information, might as well do

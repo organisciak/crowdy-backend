@@ -22,6 +22,8 @@ var taskSetSchema = mongoose.Schema({
         satisfaction: String,
         pay:String
     },
+    // Total Bonus (for task, + per item bonuses)
+    bonus: {type:Number, default: 0},
     tasks:[{
         //'type' is a reserved word, so when I want 'type'
         // to actually be in my schema, it needs to be defined
@@ -32,6 +34,7 @@ var taskSetSchema = mongoose.Schema({
             id:Number
         },
         timeSpent: Number,
+        bonus: {type:Number, default: null},
         contribution:mongoose.Schema.Types.Mixed
     }]
 });
