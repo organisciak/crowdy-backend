@@ -5,24 +5,24 @@
 #
 mongoose = require 'mongoose'
 async = require 'async'
-_ = require 'underscore'
+_ = require 'lodash'
 
 TaskSet = require './models/taskset'
 Hit = require './models/hit'
 ObjectId = mongoose.Types.ObjectId
 
 loadHIT = (opts, callback) ->
-    async.waterfall([
-      (cb) -> cb(null, opts) # Pipe opts to first func in waterfall
-      getBasicInfo,
-      getCondition,
-      getMaxedItems,
-      sampleTaskItems,
-      prepareTaskSet,
-      cleanForFrontEnd
-    ],
-    callback #Send back to the calling script
-    )
+  async.waterfall([
+    (cb) -> cb(null, opts) # Pipe opts to first func in waterfall
+    getBasicInfo,
+    getCondition,
+    getMaxedItems,
+    sampleTaskItems,
+    prepareTaskSet,
+    cleanForFrontEnd
+  ],
+  callback #Send back to the calling script
+  )
 
 # 1. Count how many taskSets this user has done in this condition
 # Also fetch HIT info, since it can be done asynchronously
@@ -32,15 +32,17 @@ getBasicInfo = (opts, callback) ->
     # Count of all taskSets done by the user
     countUserAll: (callback) -> TaskSet.countUserAll(opts.user, callback)
     # Count of tasksets in the given condition done
-    countUserHIT: (callback) -> TaskSet.countUserHIT(opts.user, opts.hit_id, callback)
+    countUserHIT: (callback) ->
+      TaskSet.countUserHIT(opts.user, opts.hit_id, callback)
     # List of user's past items completed (not specific to the current hit)
     userItemList: (callback) -> TaskSet.userItemList(opts.user, callback)
     # Load HIT info
-    hit: (callback) -> Hit.findOne({_id: ObjectId(opts.hit_id)}, (err, results) ->
-      if results is null
-        callback("HIT not found", null)
-      else
-        callback(err, results)
+    hit: (callback) -> Hit.findOne({_id: ObjectId(opts.hit_id)},
+      (err, results) ->
+        if results is null
+          callback("HIT not found", null)
+        else
+          callback(err, results)
     ),
     # Clear locks
     locksCleared: (callback) -> TaskSet.clearLocks(opts.user, callback)
@@ -54,14 +56,20 @@ getCondition = (obj, callback) ->
   else
     obj.condition = obj.hit.condition.laterTasks
 
-  # Feedback condition needs to retrieval extra information, might as well do it now.
-  # TODO Ideally we'd do it asynchronously with the next step in the waterfall, since
-  # get MaxedItems doesn't depend on this step
   switch obj.condition
     when 'feedback'
+      # Feedback condition needs to retrieval extra information, might as well do
+      # it now.
+      # TODO Ideally we'd do it asynchronously with the next step in the waterfall,
+      # since get MaxedItems doesn't depend on this step
+      obj.feedback = true
       callback('Feedback condition not yet designed', obj)
       # Psuedo-code
       #
+    when 'fast'
+      obj.timer = obj.hit.timer
+    when 'basic'
+      obj.itemTimeEstimate = obj.itemTimeEstimate
     else
       callback(null, obj)
 
@@ -92,9 +100,9 @@ getMaxedItems = (obj, callback) ->
                   # We want to know which tasks have already be done max times
                   {$match:{count:{$gte:obj.hit.setsPerItem}}}
   ).exec((err, results) ->
-      if (err) then return callback(err, obj)
-      obj.maxed = (result._id for result in results)
-      callback(null, obj)
+    if (err) then return callback(err, obj)
+    obj.maxed = (result._id for result in results)
+    callback(null, obj)
   )
   return
 
@@ -106,10 +114,6 @@ sampleTaskItems = (obj, callback) ->
     ''' TODO get teaching set '''
     callback("Teaching set not ready yet", bj)
   
-  if obj.condition is 'fast'
-    ''' TODO Prep larger set for fast completion '''
-    callback("Fast set not ready yet", obj)
-
   if obj.condition is 'basic' or 'fast'
     if obj.opts.user == 'PREVIEWUSER'
       candidates = obj.hit.items
@@ -121,7 +125,8 @@ sampleTaskItems = (obj, callback) ->
     if obj.condition is 'fast' and obj.hit.maxSetSize
       delete obj.hit.maxSetSize
 
-    itemSampleIds = _.sample(candidates, if obj.hit.maxSetSize then obj.hit.maxSetSize else 200)
+    itemSampleIds = _.sample(candidates,
+      if obj.hit.maxSetSize then obj.hit.maxSetSize else 200)
 
     # Query info for all the sampled items
     if obj.hit.itemModel is 'pin'
@@ -178,14 +183,6 @@ prepareTaskSet = (obj, callback) ->
     callback(null, obj)
 
 cleanForFrontEnd = (obj, callback) ->
-   # Redundant
-  delete obj.opts
-  delete obj.maxed
-  # Not needed by front end
-  delete obj.userItemList
-  delete obj.locksCleared
-  delete obj.hit
-  # Easier access on front-end
   # Add item information to taskSet.tasks[] as .meta field
   # This information shouldn't be saved to Mongo, since we already have it
   sampleRef = _.object(_.map(obj.sample, ((obj) -> obj._id)), obj.sample)
@@ -194,14 +191,15 @@ cleanForFrontEnd = (obj, callback) ->
     task.meta = sampleRef[task.item.id]
     task
   )
+  # Redundant
   delete obj.sample
+  delete obj.opts
+  delete obj.maxed
+  # Not needed by front end
+  delete obj.userItemList
+  delete obj.locksCleared
+  delete obj.hit
+
   callback(null, obj)
-
-
-
-# If there are no tasks left,
-# doStuff()
-# Find items which are *not* is set of items completed by user and
-# in set where HIT(CompletedItems).item.Count is less than hit.setsPerItem
 
 module.exports = loadHIT

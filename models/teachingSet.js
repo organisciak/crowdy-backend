@@ -6,9 +6,12 @@ var teachingSetSchema = mongoose.Schema({
         { 
             item: String, //Item id
             correct: String,
-            valid: mixed
+            valid: mongoose.Schema.Types.Mixed
         }
         ]
 });
-
 // TODO this needs more thought how to create a general purpose validator
+
+var TeachingSet = mongoose.connection.model('teachingset', teachingSetSchema);
+
+module.exports = TeachingSet;

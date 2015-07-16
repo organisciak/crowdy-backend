@@ -1,6 +1,6 @@
 # Load pin items from JSON to MongoDB.
 # If data is in csv, use csvkit's csvjson function
-# e.g. 
+# e.g.
 #   coffee scripts/loadPinsFromCSV.coffee \
 #       --pin-data data/sample-PinData.coffee \
 #       --pin-join-data data/sample-PinJoinData.coffee
@@ -23,7 +23,8 @@ pinData = require(filepath)
 processPin = (pin) ->
   # Prepare Pin in proper format
   newPin = _.clone(pin)
-  for val in ['id', 'image', 'image60', 'image236', 'domain', 'source', 'pin_join']
+  for val in ['id', 'image', 'image60', 'image236', 'domain',
+    'source', 'pin_join']
     delete newPin[val]
   newPin.image = {
     full: pin.image,
@@ -45,10 +46,10 @@ mongoose.connect db_server
 db = mongoose.connection
 
 db.once('open', (callback) ->
-    async.each(pinData, processPin, (err) ->
-      if err then console.error(err)
-      db.close()
-    )
+  async.each(pinData, processPin, (err) ->
+    if err then console.error(err)
+    db.close()
+  )
 )
 
 ## If PinJoinData is available
