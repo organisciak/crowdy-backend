@@ -64,13 +64,13 @@ module.exports = function (grunt) {
                 files: '<%= jshint.gruntfile.src %>',
                 tasks: ['jshint:gruntfile']
             },
-            jslinter: {
+            jslint: {
                 files: '<%= jshint.app.src %>',
-                tasks: ['jshint:app']
+                tasks: ['newer:jshint:app']
             },
             coffee: {
                 files: '<%= coffeelint.app.src %>',
-                tasks: ['coffeelint', 'coffee']
+                tasks: ['newer:coffeelint:app', 'newer:coffee:app']
             }
         }
     });
@@ -81,6 +81,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-coffeelint');
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-contrib-coffee');
+    grunt.loadNpmTasks('grunt-newer');
 
     // Default task
     grunt.registerTask('default', ['jshint', 'concat']);
