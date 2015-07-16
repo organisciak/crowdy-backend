@@ -12,14 +12,15 @@ var hitSchema = mongoose.Schema({
         // the basic design 
         laterTasks:String  // i.e. basic, feedback, training, fast
     },
-    payment: Number, // In dollars
+    // Base payment
+    payment: {type: Number, default: 0},
     // Bonus, in dollars
     bonus: {
         task:Number,
         // Nth array value corresponds to Nth task item. Last value will
         // repeat if there are more items (so a constant bonus would be
         // an array of length 1
-        item:[Number]
+        item:[{type: Number, default: 0}]
     },
     type: String, // e.g. Image tagging
     items: [Number],
