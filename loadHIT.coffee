@@ -56,15 +56,20 @@ getCondition = (obj, callback) ->
   else
     obj.condition = obj.hit.condition.laterTasks
 
-  # Feedback condition needs to retrieval extra information, might as well do
-  # it now.
-  # TODO Ideally we'd do it asynchronously with the next step in the waterfall,
-  # since get MaxedItems doesn't depend on this step
   switch obj.condition
     when 'feedback'
+      # Feedback condition needs to retrieval extra information, might as well do
+      # it now.
+      # TODO Ideally we'd do it asynchronously with the next step in the waterfall,
+      # since get MaxedItems doesn't depend on this step
+      obj.feedback = true
       callback('Feedback condition not yet designed', obj)
       # Psuedo-code
       #
+    when 'fast'
+      obj.timer = obj.hit.timer
+    when 'basic'
+      obj.itemTimeEstimate = obj.itemTimeEstimate
     else
       callback(null, obj)
 
@@ -178,17 +183,6 @@ prepareTaskSet = (obj, callback) ->
     callback(null, obj)
 
 cleanForFrontEnd = (obj, callback) ->
-   # Redundant
-  delete obj.opts
-  delete obj.maxed
-  # Not needed by front end
-  delete obj.userItemList
-  delete obj.locksCleared
-  console.log obj.hit.name
-  for value in ['items', 'setsPerItem', 'maxSetSize', 'name']
-    obj.hit[value] = null
-
-  console.log obj.hit.name
   # Add item information to taskSet.tasks[] as .meta field
   # This information shouldn't be saved to Mongo, since we already have it
   sampleRef = _.object(_.map(obj.sample, ((obj) -> obj._id)), obj.sample)
@@ -197,14 +191,15 @@ cleanForFrontEnd = (obj, callback) ->
     task.meta = sampleRef[task.item.id]
     task
   )
+  # Redundant
   delete obj.sample
+  delete obj.opts
+  delete obj.maxed
+  # Not needed by front end
+  delete obj.userItemList
+  delete obj.locksCleared
+  delete obj.hit
+
   callback(null, obj)
-
-
-
-# If there are no tasks left,
-# doStuff()
-# Find items which are *not* is set of items completed by user and
-# in set where HIT(CompletedItems).item.Count is less than hit.setsPerItem
 
 module.exports = loadHIT
