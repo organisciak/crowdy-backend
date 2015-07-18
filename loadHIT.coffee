@@ -56,16 +56,16 @@ getCondition = (obj, callback) ->
   else
     obj.condition = obj.hit.condition.laterTasks
 
-  obj.payment = {
-    base: obj.hit.payment,
+  obj.payment =
+    base: obj.hit.payment
     bonus: obj.hit.bonus
-  }
+
   switch obj.condition
     when 'feedback'
-      # Feedback condition needs to retrieval extra information, might as well do
-      # it now.
-      # TODO Ideally we'd do it asynchronously with the next step in the waterfall,
-      # since get MaxedItems doesn't depend on this step
+      # Feedback condition needs to retrieval extra information, might as well
+      # do it now.
+      # TODO Ideally we'd do it asynchronously with the next step in the
+      # waterfall, since get MaxedItems doesn't depend on this step
       obj.feedback = true
       callback('Feedback condition not yet designed', obj)
       # Psuedo-code
@@ -75,8 +75,9 @@ getCondition = (obj, callback) ->
     when 'basic'
       obj.itemTimeEstimate = obj.itemTimeEstimate
     else
-      callback(null, obj)
-
+      callback('Condition "' + obj.condition + '" not available."', obj)
+      
+  callback(null, obj)
   return
 
 # 3. Sample items for worker to complete

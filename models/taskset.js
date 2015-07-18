@@ -22,6 +22,7 @@ var taskSetSchema = mongoose.Schema({
         satisfaction: String,
         pay:String
     },
+    payment: {type:Number, default: 0},
     // Total Bonus (for task, + per item bonuses)
     bonus: {type:Number, default: 0},
     tasks:[{
