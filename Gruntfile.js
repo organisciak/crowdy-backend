@@ -47,6 +47,17 @@ module.exports = function (grunt) {
         coffeelint: {
             app: {
                 src: ['*.coffee', 'scripts/**/*.coffee', 'models/**/*.coffee', 'routes/**/*.coffee']
+            },
+            turk: {
+                src: ['turk/**/*.coffee']
+            }
+        },
+        docco: {
+            turk: {
+                src: ['<%= coffeelint.turk.src %>'],
+                options: {
+                    output: 'public/docs/'
+                }
             }
         },
         coffee: {
@@ -63,6 +74,10 @@ module.exports = function (grunt) {
             gruntfile: {
                 files: '<%= jshint.gruntfile.src %>',
                 tasks: ['jshint:gruntfile']
+            },
+            turk: {
+                files: '<%= coffeelint.turk.src %>',
+                tasks: ['newer:coffeelint:turk', 'newer:docco:turk']
             },
             jslint: {
                 files: '<%= jshint.app.src %>',
@@ -82,6 +97,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-contrib-coffee');
     grunt.loadNpmTasks('grunt-newer');
+    grunt.loadNpmTasks('grunt-docco');
 
     // Default task
     grunt.registerTask('default', ['jshint', 'concat']);
