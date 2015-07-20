@@ -35,6 +35,8 @@
     "lodash": "^3.10.0",
     "mongoose": "^4.0.6",
     "morgan": "~1.5.3",
+    "mturk": "jefftimesten/mturk",
+    "properties-reader": "0.0.10",
     "serve-favicon": "~2.2.1",
     "yargs": "^3.10.0"
   },
