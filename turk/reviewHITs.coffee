@@ -8,6 +8,7 @@ simply printed.
 
 async = require 'async'
 libxml = require 'libxmljs'
+crowdy = require './crowdyturk'
 argv = require('yargs')
         .boolean('p').alias('p', 'production')
         .describe('production', 'Run on production.')
@@ -18,38 +19,14 @@ argv = require('yargs')
         .describe('Force approval even when a bonus is listed')
         .argv
 
-# Use credentials file from Boto (for Python)
-PropertiesReader = require 'properties-reader'
-boto = PropertiesReader('/home/ec2-user/.boto')
+mturk = crowdy.mturk(argv.production)
+asArr = crowdy.asArr
 
-creds =
-  accessKey: boto.get('Credentials.aws_access_key_id')
-  secretKey: boto.get('Credentials.aws_secret_access_key')
-
-mturk = require('mturk')({creds: creds, sandbox: !argv.production})
-
-asArr = (res) ->
-  if (res instanceof Array) then res else [res]
-
-# Wrapper for recursive function
-getReviewableHITs = (page=1) ->
-  pageSize = 100
-  mturk.GetReviewableHITs(
-    {PageSize:pageSize, PageNumber:page},
-    (err, result) ->
-      if err then return console.error err
-      console.log(result)
-      hits = asArr(result.HIT)
-      async.forEach(hits, getAssignments, (err) ->
-        if err then return console.error err
-        # If there were more items left, run again
-        if (result.TotalNumResults > (page * pageSize))
-          page = page + 1
-          getReviewableHITs(page)
-      )
+main = () ->
+  crowdy.getReviewableHITs(getAssignments, {print:true}, (err) ->
+    if err then return console.error err
+    console.log("Done reviewing HITs")
   )
-
-getReviewableHITs()
 
 getAssignments = (hit, cb) ->
   mturk.GetAssignmentsForHIT({ "HITId": hit.HITId }, (err, result) ->
@@ -61,10 +38,7 @@ getAssignments = (hit, cb) ->
   )
 
 reviewAssignment = (assignment, cb) ->
-  # Parse Answer JSON
-  answerXml = libxml.parseXml(assignment.Answer, {noblanks:true})
-  answerText = answerXml.root().childNodes()[0].childNodes()[1].text()
-  assignment.Answer = JSON.parse(answerText)
+  assignment = crowdy.parseAssignment(assignment)
  
   if argv.autoapprove and assignment.AssignmentStatus != 'Approved'
     # Approve Assignment
@@ -77,7 +51,11 @@ reviewAssignment = (assignment, cb) ->
     mturk.ApproveAssignment({ AssignmentId: assignment.AssignmentId}, cb)
   else
     # Show Assignment
-    delete assignment.Answer # Delete answer mostly for easier inspection
+    if assignment.Answer.bonus
+      console.log "#{assignment.Answer.bonus} bonus owed."
+    delete assignment.Answer # Delete answer for easier inspection
     console.log assignment
     
   cb(null)
+
+main()

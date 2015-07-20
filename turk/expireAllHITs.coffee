@@ -5,6 +5,7 @@ This is the atomic approach, when you push something out accidentally and need
 to fix it. Hopefully it's not needed!
 '''
 async = require 'async'
+crowdy = require './crowdyturk'
 argv = require('yargs')
         .boolean('p').alias('production','p')
         .describe('production', 'Run on production.')
@@ -24,9 +25,7 @@ mturk = require('mturk')({creds: creds, sandbox: !argv.production})
 main = () ->
   expireAllHITs()
 
-asArr = (res) ->
-  if not res then return []
-  if (res instanceof Array) then res else [res]
+asArr = crowdy.asArr
 
 # Wrapper for recursive function
 expireAllHITs = (page=1) ->
@@ -38,7 +37,6 @@ expireAllHITs = (page=1) ->
       if result.NumResults is 0
         return db.close()
       hits = asArr(result.HIT)
-      console.log(!!async.filter)
       expireableHITs = hits.filter((hit) ->
         return (hit.HITStatus not in ['Reviewable', 'Reviewing'])
       )

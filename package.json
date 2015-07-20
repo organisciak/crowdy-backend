@@ -32,6 +32,7 @@
     "express": "~4.12.4",
     "jade": "~1.9.2",
     "js-yaml": "^3.3.1",
+    "libxmljs": "^0.14.2",
     "lodash": "^3.10.0",
     "mongoose": "^4.0.6",
     "morgan": "~1.5.3",
