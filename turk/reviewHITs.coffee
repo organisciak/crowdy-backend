@@ -43,12 +43,13 @@ reviewAssignment = (assignment, cb) ->
   if argv.autoapprove and assignment.AssignmentStatus != 'Approved'
     # Approve Assignment
     if assignment.Answer.bonus > 0 and !argv.force
-      console.log("There is a bonus specified for "
-        "#{assignment.AssignmentID}. Make sure it is paid and run this "
+      console.log("There is a bonus specified for"
+        "#{assignment.AssignmentId}. Make sure it is paid and run this"
         "script again with --force'")
       return cb(null)
-    console.log('Approving' + assignment.AssignmentId)
-    mturk.ApproveAssignment({ AssignmentId: assignment.AssignmentId}, cb)
+    else
+      console.log('Approving' + assignment.AssignmentId)
+      mturk.ApproveAssignment({ AssignmentId: assignment.AssignmentId}, cb)
   else
     # Show Assignment
     if assignment.Answer.bonus

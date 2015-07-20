@@ -13,43 +13,20 @@ argv = require('yargs')
         .argv
 
 # Use credentials file from Boto
-PropertiesReader = require 'properties-reader'
-boto = PropertiesReader('/home/ec2-user/.boto')
-
-creds =
-  accessKey: boto.get('Credentials.aws_access_key_id')
-  secretKey: boto.get('Credentials.aws_secret_access_key')
-
-mturk = require('mturk')({creds: creds, sandbox: !argv.production})
+mturk = crowdy.mturk()
 
 main = () ->
-  expireAllHITs()
-
-asArr = crowdy.asArr
-
-# Wrapper for recursive function
-expireAllHITs = (page=1) ->
-  pageSize = 10
-  mturk.SearchHITs(
-    {PageSize:pageSize, PageNumber:page},
-    (err, result) ->
+  # Wrapper for recursive function
+  crowdy.getHITs(forceExpire,
+    {
+      status: 'all'
+      print: true
+      statusFilter:['Reviewable', 'Reviewing']
+    },
+    (err) ->
       if err then return console.error err
-      if result.NumResults is 0
-        return db.close()
-      hits = asArr(result.HIT)
-      expireableHITs = hits.filter((hit) ->
-        return (hit.HITStatus not in ['Reviewable', 'Reviewing'])
-      )
-      async.forEach(hits, forceExpire, (err) ->
-        if err then return console.error err
-        # If there were more items left, run again
-        if (result.TotalNumResults > (page * pageSize))
-          page = page + 1
-          setTimeout((()->expireAllHITs(page)), 4000)
-        else
-          console.log("All HITs Expired")
-      )
-    )
+      console.log("All HITs Expired")
+  )
 
 forceExpire = (hit, cb) ->
   mturk.ForceExpireHIT({ HITId: hit.HITId }, (err, result) ->
