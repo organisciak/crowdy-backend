@@ -45,8 +45,8 @@ mturk = (production) ->
 # ### GetHITs
 #
 # Recursively get HITs and run HITFunc on them.
-# Pass a callback that takes callback(error).
-#
+# - hitFunc : function that takes (hit, callback) args. Should send
+#   callback(error) on completion
 # - opts.page: The page of results
 # - opts.print: Print the HITresults
 # - opts.status: Which HITs to retrieve. Allowable are "reviewable" and "all"
@@ -56,6 +56,12 @@ mturk = (production) ->
 #   "Assignable", "Unassignable", "Reviewable", or "Reviewing". See
 #   http://mechanicalturk.typepad.com/blog/2011/04/overview-lifecycle-of-a-hit-.html
 #   for details.
+# - opts.filter: function or array of functions for filtering hits
+#     e.g. Filter by # pending
+#     ```
+#     opts.filter = [function(hit){
+#         return (hit.NumberOfAssignmentsPending === 0)
+#     }]
 getHITs = (hitFunc, opts, callback) ->
   defaults = {
     page: 1
@@ -63,6 +69,7 @@ getHITs = (hitFunc, opts, callback) ->
     pageSize: 10
     status: 'all'
     statusFilter: []
+    filter: []
   }
   opts = _.extend(defaults, opts)
 
@@ -73,6 +80,21 @@ getHITs = (hitFunc, opts, callback) ->
   else
     return console.error "${opts.status} is not a supported value for
                           opts.status"
+  # If there's no function to run over all hits, support a null hitFunc
+  if !hitFunc or !_.isFunction(hitFunc)
+    # Using a dummy function
+    hitFunc = (hit, callback) -> return callback(null)
+
+  # Wrap function filter args in array and type check while we're at it
+  if _.isFunction(opts.filter)
+    opts.filter = [opts.filter]
+  else if not _.isArray(opts.filter)
+    console.log "opts.filter has to be a function or array of functions"
+
+  # Conver opts.statusFilter to opts.filter
+  if opts.statusFilter
+    f = ((hit) -> return (hit.HITStatus not in opts.statusFilter))
+    opts.filter.push f
 
   mturk[hitSearchFuncKey](
     {PageSize:opts.pageSize, PageNumber:opts.page},
@@ -84,10 +106,9 @@ getHITs = (hitFunc, opts, callback) ->
         console.log(result)
       hits = asArr(result.HIT)
       # Filter HITs, if asked
-      if opts.statusFilter.length isnt 0
-        hits = hits.filter((hit) ->
-          return (hit.HITStatus not in opts.statusFilter)
-        )
+      if opts.filter.length isnt 0
+        for f in opts.filter
+          hits = hits.filter f
 
       async.forEach(hits, hitFunc, (err) ->
         if err then return callback(err)
