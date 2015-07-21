@@ -5,6 +5,7 @@ This script doesn't approve or apply bonuses itself, it's sole purpose is
 Amazon cleanup.
 '''
 async = require 'async'
+crowdy = require './crowdyturk'
 argv = require('yargs')
         .boolean('p').alias('production','p')
         .describe('production', 'Run on production.')
@@ -20,46 +21,15 @@ mongoose.connect db_server
 db = mongoose.connection
 TurkBackup = require '../models/turkBackup.js'
 
-# Use credentials file from Boto
-PropertiesReader = require 'properties-reader'
-boto = PropertiesReader('/home/ec2-user/.boto')
-
-creds =
-  accessKey: boto.get('Credentials.aws_access_key_id')
-  secretKey: boto.get('Credentials.aws_secret_access_key')
-
-mturk = require('mturk')({creds: creds, sandbox: !argv.production})
-
+mturk = crowdy.mturk()
 main = () ->
-  getReviewableHITs()
-
-asArr = (res) ->
-  if not res then return []
-  if (res instanceof Array) then res else [res]
-
-# Wrapper for recursive function
-getReviewableHITs = (page=1) ->
-  pageSize = 10
-  mturk.GetReviewableHITs(
-    {PageSize:pageSize, PageNumber:page},
-    (err, result) ->
-      if err then return console.error err
-      if result.NumResults is 0
-        return db.close()
-      console.log(result)
-      hits = asArr(result.HIT)
-      async.forEach(hits, saveAssignments, (err) ->
-        if err
-          console.error err
-          db.close()
-        # If there were more items left, run again
-        if (result.TotalNumResults > (page * pageSize))
-          page = page + 1
-          setTimeout((()->getReviewableHITs(page)), 4000)
-        else
-          db.close()
-      )
+  crowdy.getReviewableHITs(saveAssignments, {}, (err) ->
+    if (err) then return console.error(err)
+    console.log "All assignments saved successfully"
+    db.close()
   )
+
+asArr = crowdy.asArr
 
 saveAssignments = (hit, cb) ->
   mturk.GetAssignmentsForHIT({ HITId: hit.HITId, PageSize:100 },
