@@ -73,7 +73,7 @@ getCondition = (obj, callback) ->
     when 'fast'
       obj.timer = obj.hit.timer
     when 'basic'
-      obj.itemTimeEstimate = obj.itemTimeEstimate
+      obj.itemTimeEstimate = obj.hit.itemTimeEstimate
     else
       callback('Condition "' + obj.condition + '" not available."', obj)
       
@@ -128,10 +128,12 @@ sampleTaskItems = (obj, callback) ->
 
     # Fast condition shouldn't specific a max size
     if obj.condition is 'fast' and obj.hit.maxSetSize
-      delete obj.hit.maxSetSize
+      # Ignore any max set size that may be specified, and return a large number
+      # of items instead
+      obj.hit.maxSetSize = 30
 
     itemSampleIds = _.sample(candidates,
-      if obj.hit.maxSetSize then obj.hit.maxSetSize else 200)
+      if obj.hit.maxSetSize then obj.hit.maxSetSize else 30)
 
     # Query info for all the sampled items
     if obj.hit.itemModel is 'pin'
@@ -143,7 +145,11 @@ sampleTaskItems = (obj, callback) ->
       (err, results) ->
         obj.sample = results
         if obj.sample.length is 0
-          callback("No tasks available.", null)
+          msg = "No tasks available. This may be because you've finished all "+
+          "the tasks that we have ready, or other people are working on "+
+          "everything on that's available (try again later), or we screwed "+
+          "something up (sorry)."
+          callback(msg, null)
         else
           callback(err, obj)
       )
@@ -166,9 +172,10 @@ prepareTaskSet = (obj, callback) ->
   obj.taskset =
     _id: obj.opts.taskset_id
     lock: obj.opts.lock
-    assignment_id: obj.opts.assignment_id,
+    assignment_id: obj.opts.assignment_id
     user: obj.opts.user
     hit_id: obj.opts.hit_id
+    turk_hit_id: obj.opts.turk_hit_id
     time:
       start:(new Date())
       submit: null

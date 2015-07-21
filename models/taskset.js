@@ -11,6 +11,7 @@ var taskSetSchema = mongoose.Schema({
     status:{type:String},
     user: String, //Should be a hashed version of WorkerId
     hit_id:String, //My unique key for the HIT (Mongo HIT _id, not hitTypeID)
+    turk_hit_id: String, // Amazon's key for the HIT
     assignment_id:String,
     time:{
         start: Date, //AcceptTime
