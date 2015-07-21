@@ -3,9 +3,10 @@
 var mongoose = require('mongoose');
 
 var bonusSchema = mongoose.Schema({
+    _id: String, // AssignmentId
     date: Date,
-    AssignmentId: String,
-    User: String // WorkerId
+    user: String, // WorkerId
+    bonus: Number
 });
 
 var Bonus = mongoose.connection.model('Bonus', bonusSchema);

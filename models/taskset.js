@@ -73,6 +73,22 @@ taskSetSchema.statics.userItemList = function(user, callback){
     ]).exec(callback);
 };
 
+// Verify a bonus amount
+taskSetSchema.statics.verifyBonus = function(_id, bonus, callback){
+    this.findOne({_id:_id, bonus:bonus}, function(error, results) {
+        if (error) { return callback(error); }
+        if (!results || results.length === 0) {
+            return callback("Didn't find assignment " + _id +
+                "with a bonus of " + bonus);
+        } else {
+            // First test passed, no verify that the bonus *amount* was correct
+            // based on HIT.payment.bonus.items
+            // TODO
+            return callback(null);
+        }
+    });
+};
+
 // Define Instance Methods
 
 // Create Model and Export
