@@ -21,7 +21,7 @@ mongoose.connect db_server
 db = mongoose.connection
 TurkBackup = require '../models/turkBackup.js'
 
-mturk = crowdy.mturk()
+mturk = crowdy.mturk(argv.production)
 main = () ->
   crowdy.getReviewableHITs(saveAssignments, {}, (err) ->
     if (err) then return console.error(err)
