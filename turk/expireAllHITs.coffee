@@ -13,9 +13,10 @@ argv = require('yargs')
         .argv
 
 # Use credentials file from Boto
-mturk = crowdy.mturk()
+mturk = crowdy.mturk(argv.production)
 
 main = () ->
+
   # Wrapper for recursive function
   crowdy.getHITs(forceExpire,
     {

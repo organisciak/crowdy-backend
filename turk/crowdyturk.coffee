@@ -27,7 +27,11 @@ parseAssignment = (assignment) ->
 # ### mturk
 # _A wrapper around mturk library to initialize with config from ~/boto._
 
-mturk = (production) ->
+# Initializing crowdy.lib (alias for mturklib) will set this local variable
+# also.
+mturk = null
+
+mturklib = (production) ->
   # Use credentials file from Boto (for Python)
   PropertiesReader = require 'properties-reader'
   boto = PropertiesReader(process.env.HOME + '/.boto')
@@ -92,8 +96,8 @@ getHITs = (hitFunc, opts, callback) ->
     console.log "opts.filter has to be a function or array of functions"
 
   # Conver opts.statusFilter to opts.filter
-  if opts.statusFilter
-    f = ((hit) -> return (hit.HITStatus not in opts.statusFilter))
+  if opts.statusFilter.length > 0
+    f = ((hit) -> return !(hit.HITStatus in opts.statusFilter))
     opts.filter.push f
 
   mturk[hitSearchFuncKey](
@@ -108,6 +112,8 @@ getHITs = (hitFunc, opts, callback) ->
       # Filter HITs, if asked
       if opts.filter.length isnt 0
         for f in opts.filter
+          if opts.print
+            console.log "Filtering"
           hits = hits.filter f
 
       async.forEach(hits, hitFunc, (err) ->
@@ -136,7 +142,7 @@ getReviewableHITs = (hitFunc, opts, callback) ->
 
 module.exports = {
   asArr: asArr
-  mturk: mturk
+  mturk: mturklib
   parseAssignment: parseAssignment
   getHITs: getHITs
   getReviewableHITs: getReviewableHITs
