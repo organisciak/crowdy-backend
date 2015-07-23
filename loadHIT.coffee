@@ -130,10 +130,10 @@ sampleTaskItems = (obj, callback) ->
     if obj.condition is 'fast' and obj.hit.maxSetSize
       # Ignore any max set size that may be specified, and return a large number
       # of items instead
-      obj.hit.maxSetSize = 30
+      obj.hit.maxSetSize = 25
 
     itemSampleIds = _.sample(candidates,
-      if obj.hit.maxSetSize then obj.hit.maxSetSize else 30)
+      if obj.hit.maxSetSize then obj.hit.maxSetSize else 25)
 
     # Query info for all the sampled items
     if obj.hit.itemModel is 'pin'

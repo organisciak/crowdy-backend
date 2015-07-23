@@ -49,7 +49,7 @@ def main():
         title=config['title'],
         description=config['description'],
         reward=price.Price(config['amount']),
-        duration=30*60,  # in seconds
+        duration=15*60,  # in seconds
         keywords=config['keywords'],
         approval_delay=1.5*24*60*60,  # seconds
         qual_req=quals
