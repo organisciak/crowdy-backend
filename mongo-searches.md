@@ -32,6 +32,13 @@ db.tasksets.aggregate({$unwind:'$tasks'}, {$unwind:'$tasks.contribution.tags'},{
 # Determine average time spent
 
 ```
-db.tasksets.aggregate({$match:{user:{$ne:"Peter"}}}, {$unwind:'$tasks'}, {$project:{'tasks.timeSpent':1, user:1}}, {$group:{_id:null, avgTime:{$avg:'$tasks.timeSpent'}}})
+db.tasksets.aggregate({$match:{user:{$ne:"Peter"}}},{$unwind:'$tasks'}, {$project:{'tasks.timeSpent':1, user:1, 'hit_id':1}}, {$group:{_id:hit_id, avgTime:{$avg:'$tasks.timeSpent'}}})
 ```
 
+# Determine completed and locked files
+
+This is useful for tracking a task during completion
+
+```
+db.tasksets.aggregate({$match:{hit_id:/55a48ddcc/}}, {$unwind:'$tasks'}, {$project:{'tasks.item.id':1, numLocked:{$cond:['$lock', 1, 0]}}}, {$group:{_id:{task:'$tasks.item.id'}, count:{$sum:1}, locked:{$sum:'$numLocked'}}},{$sort:{count:-1, locked:-1}})
+```
