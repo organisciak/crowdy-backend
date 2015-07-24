@@ -42,3 +42,8 @@ This is useful for tracking a task during completion
 ```
 db.tasksets.aggregate({$match:{hit_id:/55a48ddcc/}}, {$unwind:'$tasks'}, {$project:{'tasks.item.id':1, numLocked:{$cond:['$lock', 1, 0]}}}, {$group:{_id:{task:'$tasks.item.id'}, count:{$sum:1}, locked:{$sum:'$numLocked'}}},{$sort:{count:-1, locked:-1}})
 ```
+# Count number of items completed in a set (like in fast condition, where item count is not constant)
+
+```
+db.tasksets.aggregate({$match:{hit_id:/55a48ddcc8f1/}}, {$unwind:'$tasks'}, {$group:{_id:'$_id', numCompleted:{$sum:1}}}, {$sort:{numCompleted:-1}})
+```
