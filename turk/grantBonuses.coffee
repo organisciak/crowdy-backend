@@ -32,7 +32,7 @@ mturk = crowdy.mturk(argv.production)
 
 main = () ->
   crowdy.getHITs(getSubmittedAssignments,
-    {print:false, status:'all'},
+    {print:true, status:'all'},
     (err) ->
       if err then return console.error err
       console.log("Done reviewing HITs")
@@ -54,7 +54,8 @@ grantBonus = (assignment, cb) ->
   assignment = crowdy.parseAssignment(assignment)
   
   if !assignment.Answer.bonus
-    return cb("No bonus specified for assignment.WorkerId")
+    console.log ("No bonus specified for #{assignment.WorkerId}. Skipping...")
+    return cb(null)
 
   console.log "#{assignment.Answer.bonus} bonus owed to #{assignment.WorkerId}"
 
@@ -67,13 +68,15 @@ grantBonus = (assignment, cb) ->
       },
       (err, results) ->
         if results.length isnt 0
-          return callback("There was already a bonus paid")
+          console.error("There was already a bonus paid. Skipping...")
+          return callback(null)
         else
           callback(err)
       )
     ),
     # Confirm that the Bonus is the same that we can saved in our DB
     ((callback) ->
+      console.log "confirming bonus amount"
       TaskSet.verifyBonus(assignment.AssignmentId, assignment.Answer.bonus,
         callback)
     ),
