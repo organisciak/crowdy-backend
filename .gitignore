@@ -3,3 +3,5 @@ scripts/*js
 loadHIT.js
 saveCompletedTaskset.js
 returnTask.js
+.yo-rc.json
+turk/venv/

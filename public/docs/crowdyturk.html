@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Various reusable functions for interacting with the Turk API</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="crowdyturk.html">
+                crowdyturk.coffee
+              </a>
+            
+              
+              <a class="source" href="expireAllHITs.html">
+                expireAllHITs.coffee
+              </a>
+            
+              
+              <a class="source" href="saveLocallyAndDispose.html">
+                saveLocallyAndDispose.coffee
+              </a>
+            
+              
+              <a class="source" href="viewAllHITs.html">
+                viewAllHITs.coffee
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="various-reusable-functions-for-interacting-with-the-turk-api">Various reusable functions for interacting with the Turk API</h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+libxml = <span class="hljs-built_in">require</span> <span class="hljs-string">'libxmljs'</span>
+async = <span class="hljs-built_in">require</span> <span class="hljs-string">'async'</span>
+_ = <span class="hljs-built_in">require</span> <span class="hljs-string">'lodash'</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <h2 id="utilities">Utilities</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <h3 id="asarr">asArr</h3>
+<p><em>Force response that can be string, array, or undefined to an array.</em></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-title">asArr</span> = <span class="hljs-params">(res)</span> -&gt;</span>
+  <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> res <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> []
+  <span class="hljs-keyword">if</span> (res <span class="hljs-keyword">instanceof</span> Array) <span class="hljs-keyword">then</span> res <span class="hljs-keyword">else</span> [res]
+<span class="hljs-function">
+<span class="hljs-title">parseAssignment</span> = <span class="hljs-params">(assignment)</span> -&gt;</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>Parse Answer JSON</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  answerXml = libxml.parseXml(assignment.Answer, {<span class="hljs-attribute">noblanks</span>:<span class="hljs-literal">true</span>})
+  answerText = answerXml.root().childNodes()[<span class="hljs-number">0</span>].childNodes()[<span class="hljs-number">1</span>].text()
+  assignment.Answer = JSON.parse(answerText)
+  assignment</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <h2 id="main-functions">Main Functions</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <h3 id="mturk">mturk</h3>
+<p><em>A wrapper around mturk library to initialize with config from ~/boto.</em></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Initializing crowdy.lib (alias for mturklib) will set this local variable
+also.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>mturk = <span class="hljs-literal">null</span>
+<span class="hljs-function">
+<span class="hljs-title">mturklib</span> = <span class="hljs-params">(production)</span> -&gt;</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>Use credentials file from Boto (for Python)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  PropertiesReader = <span class="hljs-built_in">require</span> <span class="hljs-string">'properties-reader'</span>
+  boto = PropertiesReader(process.env.HOME + <span class="hljs-string">'/.boto'</span>)
+
+  creds =
+    <span class="hljs-attribute">accessKey</span>: boto.get(<span class="hljs-string">'Credentials.aws_access_key_id'</span>)
+    <span class="hljs-attribute">secretKey</span>: boto.get(<span class="hljs-string">'Credentials.aws_secret_access_key'</span>)
+
+  mturk = <span class="hljs-built_in">require</span>(<span class="hljs-string">'mturk'</span>)({<span class="hljs-attribute">creds</span>: creds, <span class="hljs-attribute">sandbox</span>: !production})
+  mturk</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <h2 id="hit-functions">Hit Functions</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <h3 id="gethits">GetHITs</h3>
+<p>Recursively get HITs and run HITFunc on them.</p>
+<ul>
+<li>hitFunc : function that takes (hit, callback) args. Should send
+callback(error) on completion</li>
+<li>opts.page: The page of results</li>
+<li>opts.print: Print the HITresults</li>
+<li>opts.status: Which HITs to retrieve. Allowable are “reviewable” and “all”</li>
+<li>opts.pageSize: How many HITs to retrieve <em>and process asynchronously</em> at a
+time</li>
+<li>opts.statusFilter: Array of hit statuses to exclude. Possible values are
+“Assignable”, “Unassignable”, “Reviewable”, or “Reviewing”. See
+<a href="http://mechanicalturk.typepad.com/blog/2011/04/overview-lifecycle-of-a-hit-.html">http://mechanicalturk.typepad.com/blog/2011/04/overview-lifecycle-of-a-hit-.html</a>
+for details.</li>
+<li>opts.filter: function or array of functions for filtering hits
+  e.g. Filter by # pending
+  ```
+  opts.filter = [function(hit){<pre><code>  <span class="hljs-keyword">return</span> (hit.NumberOfAssignmentsPending === <span class="hljs-number">0</span>)
+</code></pre>  }]</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-title">getHITs</span> = <span class="hljs-params">(hitFunc, opts, callback)</span> -&gt;</span>
+  defaults = {
+    <span class="hljs-attribute">page</span>: <span class="hljs-number">1</span>
+    <span class="hljs-attribute">print</span>: <span class="hljs-literal">false</span>
+    <span class="hljs-attribute">pageSize</span>: <span class="hljs-number">10</span>
+    <span class="hljs-attribute">status</span>: <span class="hljs-string">'all'</span>
+    <span class="hljs-attribute">statusFilter</span>: []
+    <span class="hljs-attribute">filter</span>: []
+  }
+  opts = _.extend(defaults, opts)
+
+  <span class="hljs-keyword">if</span> opts.status <span class="hljs-keyword">is</span> <span class="hljs-string">'reviewable'</span>
+    hitSearchFuncKey = <span class="hljs-string">'GetReviewableHITs'</span>
+  <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> opts.status <span class="hljs-keyword">is</span> <span class="hljs-string">'all'</span>
+    hitSearchFuncKey = <span class="hljs-string">'SearchHITs'</span>
+  <span class="hljs-keyword">else</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-built_in">console</span>.error <span class="hljs-string">"${opts.status} is not a supported value for
+                          opts.status"</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>If there’s no function to run over all hits, support a null hitFunc</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> !hitFunc <span class="hljs-keyword">or</span> !_.isFunction(hitFunc)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>Using a dummy function</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function">    <span class="hljs-title">hitFunc</span> = <span class="hljs-params">(hit, callback)</span> -&gt;</span> <span class="hljs-keyword">return</span> callback(<span class="hljs-literal">null</span>)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>Wrap function filter args in array and type check while we’re at it</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> _.isFunction(opts.filter)
+    opts.filter = [opts.filter]
+  <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> _.isArray(opts.filter)
+    <span class="hljs-built_in">console</span>.log <span class="hljs-string">"opts.filter has to be a function or array of functions"</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>Conver opts.statusFilter to opts.filter</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> opts.statusFilter.length &gt; <span class="hljs-number">0</span>
+<span class="hljs-function">    <span class="hljs-title">f</span> = (<span class="hljs-params">(hit)</span> -&gt;</span> <span class="hljs-keyword">return</span> !(hit.HITStatus <span class="hljs-keyword">in</span> opts.statusFilter))
+    opts.filter.push f
+
+  mturk[hitSearchFuncKey](
+    {<span class="hljs-attribute">PageSize</span>:opts.pageSize, <span class="hljs-attribute">PageNumber</span>:opts.page},
+    <span class="hljs-function"><span class="hljs-params">(err, result)</span> -&gt;</span>
+      <span class="hljs-keyword">if</span> err <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> <span class="hljs-built_in">console</span>.error err
+      <span class="hljs-keyword">if</span> result.NumResults <span class="hljs-keyword">is</span> <span class="hljs-number">0</span> <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> callback(<span class="hljs-literal">null</span>)
+
+      <span class="hljs-keyword">if</span> opts.<span class="hljs-built_in">print</span>
+        <span class="hljs-built_in">console</span>.log(result)
+      hits = asArr(result.HIT)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>Filter HITs, if asked</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="hljs-keyword">if</span> opts.filter.length <span class="hljs-keyword">isnt</span> <span class="hljs-number">0</span>
+        <span class="hljs-keyword">for</span> f <span class="hljs-keyword">in</span> opts.filter
+          <span class="hljs-keyword">if</span> opts.<span class="hljs-built_in">print</span>
+            <span class="hljs-built_in">console</span>.log <span class="hljs-string">"Filtering"</span>
+          hits = hits.filter f
+
+      async.forEach(hits, hitFunc, <span class="hljs-function"><span class="hljs-params">(err)</span> -&gt;</span>
+        <span class="hljs-keyword">if</span> err <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> callback(err)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <p>If there are more items left, run again</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="hljs-keyword">if</span> (result.TotalNumResults &gt; (opts.page * opts.pageSize))
+          opts.page = opts.page + <span class="hljs-number">1</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p>Wait a moment so Amazon doesn’t lock us out</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          <span class="hljs-keyword">return</span> setTimeout(<span class="hljs-function">(<span class="hljs-params">()</span>-&gt;</span>getHITs(hitFunc, opts, callback)), <span class="hljs-number">4000</span>)
+        <span class="hljs-keyword">else</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p>When there are no more pages, run the callback</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          <span class="hljs-keyword">return</span> callback(<span class="hljs-literal">null</span>)
+      )
+  )</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <h3 id="getreviewablehits">getReviewableHits</h3>
+<p>Wrapper around getHITs</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-title">getReviewableHITs</span> = <span class="hljs-params">(hitFunc, opts, callback)</span> -&gt;</span>
+  opts = _.extend(opts, {<span class="hljs-attribute">status</span>: <span class="hljs-string">'reviewable'</span>, <span class="hljs-attribute">statusFilter</span>: []})
+  getHITs(hitFunc, opts, callback)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <h2 id="assignment-functions">Assignment Functions</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+
+<span class="hljs-built_in">module</span>.exports = {
+  <span class="hljs-attribute">asArr</span>: asArr
+  <span class="hljs-attribute">mturk</span>: mturklib
+  <span class="hljs-attribute">parseAssignment</span>: parseAssignment
+  <span class="hljs-attribute">getHITs</span>: getHITs
+  <span class="hljs-attribute">getReviewableHITs</span>: getReviewableHITs
+}</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

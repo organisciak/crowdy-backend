@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>#</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="-">#</h1>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>GetReviewableHITs.
+
+--autoapprove will approve relevant assignments, otherwise assignments are
+simply printed.</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <h1 id="-">#</h1>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+async = <span class="hljs-built_in">require</span> <span class="hljs-string">'async'</span>
+libxml = <span class="hljs-built_in">require</span> <span class="hljs-string">'libxmljs'</span>
+crowdy = <span class="hljs-built_in">require</span> <span class="hljs-string">'./crowdyturk'</span>
+argv = <span class="hljs-built_in">require</span>(<span class="hljs-string">'yargs'</span>)
+        .boolean(<span class="hljs-string">'p'</span>).alias(<span class="hljs-string">'p'</span>, <span class="hljs-string">'production'</span>)
+        .describe(<span class="hljs-string">'production'</span>, <span class="hljs-string">'Run on production.'</span>)
+        .help(<span class="hljs-string">'h'</span>).alias(<span class="hljs-string">'h'</span>, <span class="hljs-string">'help'</span>)
+        .boolean(<span class="hljs-string">'autoapprove'</span>).alias(<span class="hljs-string">'auto'</span>, <span class="hljs-string">'autoapprove'</span>)
+        .describe(<span class="hljs-string">'autoapprove'</span>, <span class="hljs-string">'Approve assignments.'</span>)
+        .boolean(<span class="hljs-string">'f'</span>).alias(<span class="hljs-string">'f'</span>, <span class="hljs-string">'force'</span>)
+        .describe(<span class="hljs-string">'Force approval even when a bonus is listed'</span>)
+        .argv
+
+mturk = crowdy.mturk(argv.production)
+asArr = crowdy.asArr
+<span class="hljs-function">
+<span class="hljs-title">main</span> = <span class="hljs-params">()</span> -&gt;</span>
+  crowdy.getReviewableHITs(getAssignments, {<span class="hljs-attribute">print</span>:<span class="hljs-literal">true</span>}, <span class="hljs-function"><span class="hljs-params">(err)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> err <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> <span class="hljs-built_in">console</span>.error err
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"Done reviewing HITs"</span>)
+  )
+<span class="hljs-function">
+<span class="hljs-title">getAssignments</span> = <span class="hljs-params">(hit, cb)</span> -&gt;</span>
+  mturk.GetAssignmentsForHIT({ <span class="hljs-string">"HITId"</span>: hit.HITId }, <span class="hljs-function"><span class="hljs-params">(err, result)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> result.Assignment <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>)
+    <span class="hljs-keyword">if</span> err <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> cb(err)
+
+    assignments = asArr(result.Assignment)
+    async.forEach(assignments, reviewAssignment, cb)
+  )
+<span class="hljs-function">
+<span class="hljs-title">reviewAssignment</span> = <span class="hljs-params">(assignment, cb)</span> -&gt;</span>
+  assignment = crowdy.parseAssignment(assignment)
+ 
+  <span class="hljs-keyword">if</span> argv.autoapprove <span class="hljs-keyword">and</span> assignment.AssignmentStatus != <span class="hljs-string">'Approved'</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>Approve Assignment</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> assignment.Answer.bonus &gt; <span class="hljs-number">0</span> <span class="hljs-keyword">and</span> !argv.force
+      <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"There is a bonus specified for"</span>
+        <span class="hljs-string">"<span class="hljs-subst">#{assignment.AssignmentId}</span>. Make sure it is paid and run this"</span>
+        <span class="hljs-string">"script again with --force'"</span>)
+      <span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>)
+    <span class="hljs-keyword">else</span>
+      <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Approving'</span> + assignment.AssignmentId)
+      mturk.ApproveAssignment({ <span class="hljs-attribute">AssignmentId</span>: assignment.AssignmentId}, cb)
+  <span class="hljs-keyword">else</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>Show Assignment</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> assignment.Answer.bonus
+      <span class="hljs-built_in">console</span>.log <span class="hljs-string">"<span class="hljs-subst">#{assignment.Answer.bonus}</span> bonus owed."</span>
+    <span class="hljs-keyword">delete</span> assignment.Answer <span class="hljs-comment"># Delete answer for easier inspection</span>
+    <span class="hljs-built_in">console</span>.log assignment
+    
+  cb(<span class="hljs-literal">null</span>)
+
+main()</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

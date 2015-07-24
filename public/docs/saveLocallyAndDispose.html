@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>saveLocallyAndDispose.coffee</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="crowdyturk.html">
+                crowdyturk.coffee
+              </a>
+            
+              
+              <a class="source" href="expireAllHITs.html">
+                expireAllHITs.coffee
+              </a>
+            
+              
+              <a class="source" href="saveLocallyAndDispose.html">
+                saveLocallyAndDispose.coffee
+              </a>
+            
+              
+              <a class="source" href="viewAllHITs.html">
+                viewAllHITs.coffee
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>saveLocallyAndDispose.coffee</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-string">'''
+Get all approved assignments, save their info to Mongo, then remove from Amazon
+
+This script doesn't approve or apply bonuses itself, it's sole purpose is
+Amazon cleanup.
+'''</span>
+async = <span class="hljs-built_in">require</span> <span class="hljs-string">'async'</span>
+crowdy = <span class="hljs-built_in">require</span> <span class="hljs-string">'./crowdyturk'</span>
+argv = <span class="hljs-built_in">require</span>(<span class="hljs-string">'yargs'</span>)
+        .boolean(<span class="hljs-string">'p'</span>).alias(<span class="hljs-string">'production'</span>,<span class="hljs-string">'p'</span>)
+        .describe(<span class="hljs-string">'production'</span>, <span class="hljs-string">'Run on production.'</span>)
+        .boolean(<span class="hljs-string">'e'</span>).alias(<span class="hljs-string">'empty-only'</span>, <span class="hljs-string">'e'</span>)
+        .describe(<span class="hljs-string">'e'</span>, <span class="hljs-string">'Only dispose reviewable HITs without any assignments.'</span>)
+        .help(<span class="hljs-string">'h'</span>).alias(<span class="hljs-string">'h'</span>, <span class="hljs-string">'help'</span>)
+        .argv
+
+mongoose = <span class="hljs-built_in">require</span> <span class="hljs-string">'mongoose'</span>
+config = <span class="hljs-built_in">require</span> <span class="hljs-string">'config'</span>
+db_server = <span class="hljs-string">'mongodb://'</span> + config.get(<span class="hljs-string">'db.host'</span>) + <span class="hljs-string">'/'</span> + config.get(<span class="hljs-string">'db.name'</span>)
+mongoose.connect db_server
+db = mongoose.connection
+TurkBackup = <span class="hljs-built_in">require</span> <span class="hljs-string">'../models/turkBackup.js'</span>
+
+mturk = crowdy.mturk(argv.production)
+<span class="hljs-function"><span class="hljs-title">main</span> = <span class="hljs-params">()</span> -&gt;</span>
+  crowdy.getReviewableHITs(saveAssignments, {}, <span class="hljs-function"><span class="hljs-params">(err)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> (err) <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> <span class="hljs-built_in">console</span>.error(err)
+    <span class="hljs-built_in">console</span>.log <span class="hljs-string">"All assignments saved successfully"</span>
+    db.close()
+  )
+
+asArr = crowdy.asArr
+<span class="hljs-function">
+<span class="hljs-title">saveAssignments</span> = <span class="hljs-params">(hit, cb)</span> -&gt;</span>
+  mturk.GetAssignmentsForHIT({ <span class="hljs-attribute">HITId</span>: hit.HITId, <span class="hljs-attribute">PageSize</span>:<span class="hljs-number">100</span> },
+  <span class="hljs-function"><span class="hljs-params">(err, result)</span> -&gt;</span>
+    <span class="hljs-keyword">if</span> err <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> cb(err)
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> result.Assignment</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>HIT doesn’t have completed assignments</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      mturk.DisposeHIT({ <span class="hljs-attribute">HITId</span>: hit.HITId}, <span class="hljs-function"><span class="hljs-params">(err, result)</span> -&gt;</span>
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> err <span class="hljs-keyword">then</span> <span class="hljs-built_in">console</span>.log <span class="hljs-string">"Empty HIT <span class="hljs-subst">#{hit.HITId}</span> was disposed."</span>
+        <span class="hljs-keyword">return</span> cb(err)
+      )
+      <span class="hljs-keyword">return</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>Don’t go any further if the emty-only flag is up</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> argv.e <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> cb(<span class="hljs-literal">null</span>)
+    assignments = asArr(result.Assignment)
+    async.forEach(assignments, saveAssignment, <span class="hljs-function"><span class="hljs-params">(err)</span> -&gt;</span>
+      <span class="hljs-keyword">if</span> err <span class="hljs-keyword">then</span> <span class="hljs-keyword">return</span> cb(err)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>The assignments seem to have saved properly, so dispose of the HIT</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      mturk.DisposeHIT({ <span class="hljs-attribute">HITId</span>: hit.HITId}, <span class="hljs-function"><span class="hljs-params">(err, result)</span> -&gt;</span>
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> err <span class="hljs-keyword">then</span> <span class="hljs-built_in">console</span>.log <span class="hljs-string">"<span class="hljs-subst">#{hit.HITId}</span> saved and disposed."</span>
+        cb(err)
+      )
+    )
+  )</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>Save an Individual Assignment to Mongo</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-title">saveAssignment</span> = <span class="hljs-params">(assignment, cb)</span> -&gt;</span>
+  <span class="hljs-keyword">if</span> assignment.AssignmentStatus <span class="hljs-keyword">not</span> <span class="hljs-keyword">in</span> [<span class="hljs-string">'Approved'</span>, <span class="hljs-string">'Rejected'</span>]
+    <span class="hljs-built_in">console</span>.log assignment
+    <span class="hljs-keyword">return</span> cb(<span class="hljs-string">"<span class="hljs-subst">#{assignment.AssignmentId}</span> does not have an expected status.
+    Don't run this script until all assignments are reviewed."</span>)
+  assignment._id = assignment.AssignmentId
+  assignment.sandbox = <span class="hljs-literal">true</span>
+  turkBackup = <span class="hljs-keyword">new</span> TurkBackup(assignment)
+  turkBackup.save(<span class="hljs-function"><span class="hljs-params">(err, res)</span> -&gt;</span> cb(err))
+
+main()</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
