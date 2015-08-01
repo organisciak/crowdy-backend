@@ -9,6 +9,8 @@
 mongoose = require 'mongoose'
 path = require 'path'
 config = require 'config'
+_ = require 'lodash'
+async = require 'async'
 db_server = 'mongodb://' + config.get('db.host') + '/' + config.get('db.name')
 
 # Load Args
@@ -29,12 +31,20 @@ mongoose.connect db_server
 db = mongoose.connection
 db.on('error', console.error.bind(console, 'connection error:'))
 
-db.once('open', (callback) ->
-  instance = new Model(input)
+saveItem = (item, callback) ->
+  instance = new Model(item)
   instance.save((err, res) ->
-    if (err) then return console.error(err)
+    if (err) then return callback(err)
     console.log "Successfully saved"
     console.log res
+    callback()
+  )
+
+db.once('open', (callback) ->
+  if !_.isArray(input)
+    input = [input]
+  async.each(input, saveItem, (err) ->
+    if err then console.error err
     db.close()
   )
 )
