@@ -23,10 +23,24 @@ var hitSchema = mongoose.Schema({
         items:[{type: Number, default: 0}]
     },
     type: String, // e.g. Image tagging
-    items: [Number],
     // The name of the model for items, e.g. 'pin'.
-    // Should correspond to a mondel in models/{{itemModel}}.js
+    // Should correspond to a model in models/{{itemModel}}.js
     itemModel: String,
+    // The items to choose from. 
+    // If facets.length !== 0, the items will be sampled from
+    // a facet in facets[]
+    items: [Number],
+    // A subsample. E.g. a query, which for meta has a name, 
+    facets: [{
+        meta:mongoose.Schema.Types.Mixed,
+        items: [Number],
+    }],
+    // An explanation of what kind of facet is used, if any.
+    // Optional, because this information should be gleamed
+    // from the hit.type. If type === 'Relevance judgments", we
+    // know that the faceting is queries. For now, facetType
+    // is meant as a human-friendly annotation.
+    facetType: String,
     setsPerItem: Number,
     maxSetSize: Number,
     // Used for estimating how long the task will take

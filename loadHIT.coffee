@@ -16,6 +16,7 @@ loadHIT = (opts, callback) ->
     (cb) -> cb(null, opts) # Pipe opts to first func in waterfall
     getBasicInfo,
     getCondition,
+    sampleFacet,
     getMaxedItems,
     sampleTaskItems,
     prepareTaskSet,
@@ -80,8 +81,22 @@ getCondition = (obj, callback) ->
   callback(null, obj)
   return
 
+## 2.2 Sample a facet, if relevant
+## Facets let us define subgroups of the data, like 'queries' for an IR hit
+sampleFacet = (obj, callback) ->
+  if obj.hit.facets and obj.hit.facets.length > 0
+    obj.facet = _.sample(obj.hit.facets, 1)[0]
+    obj.hit.items = obj.facet.items
+    obj.userItemList = _.filter(obj.userItemList, (item) ->
+      item.facet_id is obj.facet._id
+    )
+  else
+    # Easier to work with later if null rather than undefined
+    obj.facet = null
+  callback(null, obj)
+
 # 3. Sample items for worker to complete
-# 3.1 Determine with items have already been done enough
+# 3.1 Determine which items have already been done enough
 getMaxedItems = (obj, callback) ->
   if obj.condition is 'teaching'
     ''' Don't need maxed conditions because teaching set is pre-determined '''
@@ -94,17 +109,21 @@ getMaxedItems = (obj, callback) ->
     callback(null,obj)
     return
 
+  facet_id = if obj.facet then obj.facet._id else null
   # Get a list of all currentHIT items completed
-  TaskSet#.find({hit_id:hit_id}
-    .aggregate({$match:{hit_id:obj.opts.hit_id}},
-                  {$project:{"tasks.item.id":1}},
-                  {$unwind : "$tasks"},
-                  # Matching on task item id *after* unwinding
-                  {$match: {'tasks.item.id':{$in: obj.hit.items }}},
-                  {$group: {_id:"$tasks.item.id", count:{$sum:1}}},
-                  # We want to know which tasks have already be done max times
-                  {$match:{count:{$gte:obj.hit.setsPerItem}}}
-  ).exec((err, results) ->
+  TaskSet.aggregate([
+    {$match:{
+      hit_id:obj.opts.hit_id,
+      facet_id:(if obj.facet then obj.facet._id else null)
+    }},
+    {$project:{"tasks.item.id":1}},
+    {$unwind : "$tasks"},
+    # Matching on task item id *after* unwinding
+    {$match: {'tasks.item.id':{$in: obj.hit.items }}},
+    {$group: { _id:"$tasks.item.id", count:{$sum:1} }},
+    # We want to know which tasks have already be done max times
+    {$match:{count:{$gte:obj.hit.setsPerItem}}}
+  ]).exec((err, results) ->
     if (err) then return callback(err, obj)
     obj.maxed = (result._id for result in results)
     callback(null, obj)
@@ -123,10 +142,11 @@ sampleTaskItems = (obj, callback) ->
     if obj.opts.user == 'PREVIEWUSER'
       candidates = obj.hit.items
     else
+      # Create list of excludes
       excludes = obj.maxed.concat (item._id for item in obj.userItemList)
       candidates = _.difference(obj.hit.items, excludes)
 
-    # Fast condition shouldn't specific a max size
+    # Fast condition shouldn't specify a max size
     if obj.condition is 'fast' and obj.hit.maxSetSize
       # Ignore any max set size that may be specified, and return a large number
       # of items instead
@@ -135,14 +155,16 @@ sampleTaskItems = (obj, callback) ->
     itemSampleIds = _.sample(candidates,
       if obj.hit.maxSetSize then obj.hit.maxSetSize else 25)
 
+    obj.locksCleared = null
     # Query info for all the sampled items
     if obj.hit.itemModel is 'pin'
       projection = { url:1, description:1, title:1, image:1, likes:1, repins:1 }
     else
       projection = {}
-    ItemModel.find({_id:$in:itemSampleIds},
+    ItemModel.find({_id:{$in:itemSampleIds}},
       projection,
       (err, results) ->
+        if err then return callback(err)
         obj.sample = results
         if obj.sample.length is 0
           msg = "No tasks available. This may be because you've finished all "+
@@ -175,6 +197,7 @@ prepareTaskSet = (obj, callback) ->
     assignment_id: obj.opts.assignment_id
     user: obj.opts.user
     hit_id: obj.opts.hit_id
+    facet_id: (if obj.facet then obj.facet._id else null)
     turk_hit_id: obj.opts.turk_hit_id
     time:
       start:(new Date())

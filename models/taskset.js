@@ -11,6 +11,7 @@ var taskSetSchema = mongoose.Schema({
     status:{type:String},
     user: String, //Should be a hashed version of WorkerId
     hit_id:String, //My unique key for the HIT (Mongo HIT _id, not hitTypeID)
+    facet_id:String, //Id of facet, if used (embedded doc in hit.facets)
     turk_hit_id: String, // Amazon's key for the HIT
     assignment_id:String,
     time:{
@@ -64,11 +65,11 @@ taskSetSchema.statics.clearLocks = function(user, callback) {
     return this.remove(find_outdated_locks, callback);
 };
 
-// List of all items a user can completed
+// List of all items a user has completed
 taskSetSchema.statics.userItemList = function(user, callback){
     return this.aggregate([
             {$match: {user:user, lock:{$ne:true}}},
-            {$project:{"tasks.item.id":1}},
+            {$project:{"facet_id":1, "tasks.item.id":1}},
             {$unwind : "$tasks"},
             {$group: {_id:"$tasks.item.id"}}
     ]).exec(callback);
