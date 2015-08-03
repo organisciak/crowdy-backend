@@ -46,7 +46,12 @@ module.exports = function (grunt) {
         },
         coffeelint: {
             app: {
-                src: ['*.coffee', 'scripts/**/*.coffee', 'models/**/*.coffee', 'routes/**/*.coffee']
+                src: ['*.coffee',
+                        'scripts/**/*.coffee',
+                        'test/**/*.coffee',
+                        'models/**/*.coffee',
+                        'routes/**/*.coffee'
+                     ]
             },
             turk: {
                 src: ['turk/**/*.coffee']
