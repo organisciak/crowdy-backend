@@ -1,17 +1,23 @@
+mongoose = require 'mongoose'
+config = require 'config'
+db_server = 'mongodb://' + config.get('db.host') + '/' + config.get('db.name')
+mongoose.connect db_server
+db = mongoose.connection
 loadHIT = require '../loadHIT'
 
 query =
  assignment_id:'TEST'
- hit_id: '55bc94fb887cb2a616d5b2b3'
+ hit_id: '55bf1b2acf34cc913bd742a0'
  lock: true
  taskset_id: 'TEST'
  turk_hit_id: 'NONE'
  user: 'PREVIEWUSER'
 
-loadHIT(query, (err, results)->
-  if (err)
-    console.error err
-  else
+db.once('open', (callback) ->
+  loadHIT(query, (err, results) ->
+    if (err) then console.error err
     console.log results
-  return
+    db.close()
+    return
+  )
 )

@@ -48,10 +48,12 @@ module.exports = function (grunt) {
             app: {
                 src: ['*.coffee',
                         'scripts/**/*.coffee',
-                        'test/**/*.coffee',
                         'models/**/*.coffee',
                         'routes/**/*.coffee'
                      ]
+            },
+            test: {
+                src: ['test/**/*.coffee']
             },
             turk: {
                 src: ['turk/**/*.coffee']
