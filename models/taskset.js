@@ -11,7 +11,12 @@ var taskSetSchema = mongoose.Schema({
     status:{type:String},
     user: String, //Should be a hashed version of WorkerId
     hit_id:String, //My unique key for the HIT (Mongo HIT _id, not hitTypeID)
-    facet_id:String, //Id of facet, if used (embedded doc in hit.facets)
+    // Information about the facet, if used (corresponds to embedded doc in
+    // hit.facets
+    facet: {
+        _id: mongoose.Schema.Types.ObjectId,
+        meta: mongoose.Schema.Types.Mixed,
+    },
     turk_hit_id: String, // Amazon's key for the HIT
     assignment_id:String,
     time:{
@@ -69,9 +74,9 @@ taskSetSchema.statics.clearLocks = function(user, callback) {
 taskSetSchema.statics.userItemList = function(user, callback){
     return this.aggregate([
             {$match: {user:user, lock:{$ne:true}}},
-            {$project:{"facet_id":1, "tasks.item.id":1}},
+            {$project:{"facet._id":1, "tasks.item.id":1}},
             {$unwind : "$tasks"},
-            {$group: {_id:"$tasks.item.id"}}
+            {$group: {_id:{facet:"$facet._id", item:"$tasks.item.id"}}}
     ]).exec(callback);
 };
 
