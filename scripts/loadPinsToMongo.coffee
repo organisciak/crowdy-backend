@@ -20,7 +20,7 @@ if !argv.pinData then return console.error("No file specified.")
 filepath = path.resolve(process.cwd(), argv.pinData)
 pinData = require(filepath)
 
-processPin = (pin) ->
+processPin = (pin, cb) ->
   # Prepare Pin in proper format
   newPin = _.clone(pin)
   for val in ['id', 'image', 'image60', 'image236', 'domain',
@@ -38,8 +38,9 @@ processPin = (pin) ->
   # Make pin into instance of Mongoose model and save
   pinInstance = new Pin(newPin)
   pinInstance.save((err, res) ->
-    if (err) then return console.error(err)
-    console.log(res)
+    # Don't kill on error, just keep going
+    if (err) then console.error(err)
+    cb(null)
   )
 
 mongoose.connect db_server
