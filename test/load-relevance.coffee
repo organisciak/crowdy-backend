@@ -11,7 +11,7 @@ query =
  lock: true
  taskset_id: 'TEST'
  turk_hit_id: 'NONE'
- user: 'PREVIEWUSER'
+ user: 'TESTPETER'
 
 db.once('open', (callback) ->
   loadHIT(query, (err, results) ->

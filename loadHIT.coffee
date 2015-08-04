@@ -88,7 +88,9 @@ sampleFacet = (obj, callback) ->
     obj.facet = _.sample(obj.hit.facets, 1)[0]
     obj.hit.items = obj.facet.items
     obj.userItemList = _.filter(obj.userItemList, (item) ->
-      item.facet_id is obj.facet._id
+      if not item._id.facet
+        return false
+      return item._id.facet.equals(obj.facet._id)
     )
   else
     # Easier to work with later if null rather than undefined
@@ -143,7 +145,7 @@ sampleTaskItems = (obj, callback) ->
       candidates = obj.hit.items
     else
       # Create list of excludes
-      excludes = obj.maxed.concat (item._id for item in obj.userItemList)
+      excludes = obj.maxed.concat (item._id.item for item in obj.userItemList)
       candidates = _.difference(obj.hit.items, excludes)
 
     # Fast condition shouldn't specify a max size
@@ -197,7 +199,7 @@ prepareTaskSet = (obj, callback) ->
     assignment_id: obj.opts.assignment_id
     user: obj.opts.user
     hit_id: obj.opts.hit_id
-    facet_id: (if obj.facet then obj.facet._id else null)
+    facet: ( _.pick(obj.facet, ['meta', '_id']) || null)
     turk_hit_id: obj.opts.turk_hit_id
     time:
       start:(new Date())
@@ -234,6 +236,7 @@ cleanForFrontEnd = (obj, callback) ->
   delete obj.userItemList
   delete obj.locksCleared
   delete obj.hit
+  delete obj.facet
 
   callback(null, obj)
 
