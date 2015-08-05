@@ -56,7 +56,6 @@ reviewAssignment = (assignment, cb) ->
       console.log "#{assignment.Answer.bonus} bonus owed."
     delete assignment.Answer # Delete answer for easier inspection
     console.log assignment
-    
-  cb(null)
+    cb(null)
 
 main()

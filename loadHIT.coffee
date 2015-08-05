@@ -153,10 +153,10 @@ getMaxedItems = (obj, callback) ->
 
   facet_id = if obj.facet then obj.facet._id else null
   # Get a list of all currentHIT items completed
-  TaskSet.aggregate([
+  agg = [
     {$match:
       hit_id:obj.opts.hit_id
-      facet_id: (if obj.facet then obj.facet._id else null)
+      'facet._id': (if obj.facet then ObjectId(obj.facet._id) else null)
     },
     {$project:
       "tasks.item.id":1
@@ -177,8 +177,10 @@ getMaxedItems = (obj, callback) ->
       count:
         $gte:obj.hit.setsPerItem
     }
-  ]).exec((err, results) ->
+  ]
+  TaskSet.aggregate(agg).exec((err, results) ->
     if (err) then return callback(err, obj)
+    console.log if obj.facet then obj.facet._id else null
     obj.maxed = (result._id for result in results)
     callback(null, obj)
   )
