@@ -37,6 +37,9 @@ getBasicInfo = (opts, callback) ->
       TaskSet.countUserHIT(opts.user, opts.hit_id, callback)
     # List of user's past items completed (not specific to the current hit)
     userItemList: (callback) -> TaskSet.userItemList(opts.user, callback)
+    # Counts of all the facet that have been completed for the task, if any
+    countFacetsCompleted: (callback) ->
+      TaskSet.countFacetsCompleted(opts.hit_id, callback)
     # Load HIT info
     hit: (callback) -> Hit.findOne({_id: ObjectId(opts.hit_id)},
       (err, results) ->
@@ -85,7 +88,44 @@ getCondition = (obj, callback) ->
 ## Facets let us define subgroups of the data, like 'queries' for an IR hit
 sampleFacet = (obj, callback) ->
   if obj.hit.facets and obj.hit.facets.length > 0
-    obj.facet = _.sample(obj.hit.facets, 1)[0]
+    # Rather than randomly sampling a facet, let's sample the one with the
+    # least completed or locked items
+    facets = _.map(obj.hit.facets, (item) -> item._id.toString())
+    flist = _.map(obj.countFacetsCompleted, (item)-> item._id.toString())
+    
+    # Prepend any facets that haven't been started
+    flist = _.difference(facets, flist).concat(flist)
+    
+    # Exclude items that the user seems to have maxed out
+    obj.userFacetCounts =  _.countBy(obj.userItemList, (item) ->
+      if item._id.facet
+        return item._id.facet.toString()
+      else
+        return null
+    )
+    obj.hit.facetItemCounts = _.map(obj.hit.facets, (facet) ->
+      {_id:facet._id.toString(), count:facet.items.length}
+    )
+    invalidFacets = []
+    for item in obj.hit.facetItemCounts
+      c = obj.userFacetCounts
+      if c[item._id] and (c[item._id] >= item.count)
+        invalidFacets.push item._id
+    flist = _.difference(flist, invalidFacets)
+    
+    # If there are no valid facets, we know that there's nothing for the user
+    if flist.length is 0
+      msg = "No tasks available. This may be because you've finished all "+
+      "the tasks that we have ready, or other people are working on "+
+      "everything on that's available (try again later), or we screwed "+
+      "something up (sorry)."
+      return callback(msg, null)
+
+    # Sample Facet
+    f_id_str = flist[0]
+    obj.facet = _.find(obj.hit.facets, (facet) ->
+      (facet._id.toString() == f_id_str)
+    )
     obj.hit.items = obj.facet.items
     obj.userItemList = _.filter(obj.userItemList, (item) ->
       if not item._id.facet
@@ -114,17 +154,29 @@ getMaxedItems = (obj, callback) ->
   facet_id = if obj.facet then obj.facet._id else null
   # Get a list of all currentHIT items completed
   TaskSet.aggregate([
-    {$match:{
-      hit_id:obj.opts.hit_id,
-      facet_id:(if obj.facet then obj.facet._id else null)
-    }},
-    {$project:{"tasks.item.id":1}},
+    {$match:
+      hit_id:obj.opts.hit_id
+      facet_id: (if obj.facet then obj.facet._id else null)
+    },
+    {$project:
+      "tasks.item.id":1
+    },
     {$unwind : "$tasks"},
     # Matching on task item id *after* unwinding
-    {$match: {'tasks.item.id':{$in: obj.hit.items }}},
-    {$group: { _id:"$tasks.item.id", count:{$sum:1} }},
+    {$match:
+      'tasks.item.id':
+        $in: obj.hit.items
+    },
+    {$group:
+      _id: "$tasks.item.id",
+      count:
+        $sum:1
+    },
     # We want to know which tasks have already be done max times
-    {$match:{count:{$gte:obj.hit.setsPerItem}}}
+    {$match:
+      count:
+        $gte:obj.hit.setsPerItem
+    }
   ]).exec((err, results) ->
     if (err) then return callback(err, obj)
     obj.maxed = (result._id for result in results)
@@ -235,6 +287,8 @@ cleanForFrontEnd = (obj, callback) ->
   # Not needed by front end
   delete obj.userItemList
   delete obj.locksCleared
+  delete obj.userFacetCounts
+  delete obj.countFacetsCompleted
   delete obj.hit
   delete obj.facet
 

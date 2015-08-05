@@ -56,6 +56,23 @@ taskSetSchema.statics.countUserHIT = function(user, hit_id, callback) {
     return this.count({user:user, hit_id:hit_id, lock:{$ne:true}}).exec(callback);
 };
 
+taskSetSchema.statics.countFacetsCompleted = function(hit_id, callback) {
+    // Return a sorted list of items completed for all the facets, started with the lowest
+    var count_by_facets = [
+        {$match:{
+                    hit_id: hit_id,
+                    facet:{$exists:true},
+                    'facet._id':{$exists:true},
+                    $or:[ {lock:true}, {status:'reviewable'} ]
+                }},
+        {$project:{'facet':'$facet._id', 'tasks':1}},
+        {$unwind:'$tasks'},
+        {$group:{_id:'$facet', count:{$sum:1}}},
+        {$sort:{count:1}}
+    ];
+    return this.aggregate(count_by_facets, callback);
+};
+
 taskSetSchema.statics.clearLocks = function(user, callback) {
     // Remove tasksets with expired locks 
     var find_outdated_locks = {

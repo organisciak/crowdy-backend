@@ -7,7 +7,8 @@ loadHIT = require '../loadHIT'
 
 query =
  assignment_id:'TEST'
- hit_id: '55bf1b2acf34cc913bd742a0'
+ hit_id: '55c11bd005c98d590f1f2784'
+ #hit_id: '55c12fc41346450225e92d35'
  lock: true
  taskset_id: 'TEST'
  turk_hit_id: 'NONE'
