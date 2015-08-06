@@ -48,7 +48,18 @@ var hitSchema = mongoose.Schema({
     // time is the best estimate
     itemTimeEstimate: Number,
     // Specifies the task-completion timer in 'fast' condition
-    timer: { type: Number, default: null }
+    timer: { type: Number, default: null },
+    // Workers to exclude
+    exclude: {
+        // Workers that have done any tasks with this tasktype before
+        pastInTaskType: Boolean,
+        // All past workers (NOT IMPLEMENTED)
+        pastAll: Boolean,
+        // Array of hit_ids to exclude (NOT IMPLEMENTED)
+        pastInHits: [String],
+        // Array of userids to exclude (NOT IMPLEMENTED)
+        users: [String]
+    }
 });
 
 var Hit = mongoose.connection.model('Hit', hitSchema);

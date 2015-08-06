@@ -16,6 +16,7 @@ loadHIT = (opts, callback) ->
     (cb) -> cb(null, opts) # Pipe opts to first func in waterfall
     getBasicInfo,
     getCondition,
+    excludeWorkers,
     sampleFacet,
     getMaxedItems,
     sampleTaskItems,
@@ -84,7 +85,36 @@ getCondition = (obj, callback) ->
   callback(null, obj)
   return
 
-## 2.2 Sample a facet, if relevant
+## 2.2 Exclude workers if relevance
+excludeWorkers = (obj, callback) ->
+  if not obj.hit.exclude.pastInTaskType
+    return callback(null, obj)
+  if obj.hit.exclude.pastInTaskType
+    # Find hits with the same type (excluding this one)
+    Hit.aggregate([
+      {$match:{"type": obj.hit.type, "_id":{"$ne":obj.hit._id}}},
+      {$group:{_id:null, "hits":{$addToSet:'$_id'}}}
+    ]).exec((err, results) ->
+      if (err)
+      # Skipping exclusion
+        console.log err
+        return callback(null, obj)
+      hit_ids = _.map(results[0].hits, (hitobj) -> hitobj.toString())
+      TaskSet.findOne(
+        {hit_id:{$in:hit_ids}, user:obj.opts.user}
+      ).exec((err, results) ->
+        if (err) then console.error err
+        if results
+          return callback("It looks like you've done a very similar " +
+            "task to this one, so it wouldn't be fun to do it again. " +
+            "Sorry to let you know after accepting, but we don't have " +
+            "information about you during the preview.", null)
+        else
+          return callback(null, obj)
+      )
+    )
+
+## 2.3 Sample a facet, if relevant
 ## Facets let us define subgroups of the data, like 'queries' for an IR hit
 sampleFacet = (obj, callback) ->
   if obj.hit.facets and obj.hit.facets.length > 0
@@ -180,7 +210,6 @@ getMaxedItems = (obj, callback) ->
   ]
   TaskSet.aggregate(agg).exec((err, results) ->
     if (err) then return callback(err, obj)
-    console.log if obj.facet then obj.facet._id else null
     obj.maxed = (result._id for result in results)
     callback(null, obj)
   )
@@ -206,10 +235,10 @@ sampleTaskItems = (obj, callback) ->
     if obj.condition is 'fast' and obj.hit.maxSetSize
       # Ignore any max set size that may be specified, and return a large number
       # of items instead
-      obj.hit.maxSetSize = 25
+      obj.hit.maxSetSize = 30
 
     itemSampleIds = _.sample(candidates,
-      if obj.hit.maxSetSize then obj.hit.maxSetSize else 25)
+      if obj.hit.maxSetSize then obj.hit.maxSetSize else 30)
 
     obj.locksCleared = null
     # Query info for all the sampled items
