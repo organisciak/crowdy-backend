@@ -15,6 +15,7 @@ loadHIT = (opts, callback) ->
   async.waterfall([
     (cb) -> cb(null, opts) # Pipe opts to first func in waterfall
     getBasicInfo,
+    getExtraInfo,
     getCondition,
     excludeWorkers,
     sampleFacet,
@@ -54,9 +55,23 @@ getBasicInfo = (opts, callback) ->
   }, callback
   )
 
+# 2. getExtraInfo
+# Now that we have the hit loaded, there are a few more preparatory functions
+# that we can run in parallel rather than series
+getExtraInfo = (obj, callback) ->
+  async.parallel({
+    allHitType: (cb) -> Hit.listAllByType(obj.hit.type, cb)
+  }, (err, results) ->
+    if (err) then callback(err)
+    console.log results
+    # Merge results into main obj
+    obj = _.extend(obj, results)
+    callback(null, obj)
+  )
+
 # 2. Determine the current condition
 getCondition = (obj, callback) ->
-  if obj.countUserHIT is 1
+  if obj.countUserHIT is 0
     obj.condition = obj.hit.condition.firstTask
   else
     obj.condition = obj.hit.condition.laterTasks
@@ -67,25 +82,30 @@ getCondition = (obj, callback) ->
 
   switch obj.condition
     when 'feedback'
-      # Feedback condition needs to retrieval extra information, might as well
-      # do it now.
-      # TODO Ideally we'd do it asynchronously with the next step in the
-      # waterfall, since get MaxedItems doesn't depend on this step
+      # We're going to stick with the design of the first task, and layer the
+      # feedback on top of that
+      obj.condition = obj.hit.condition.firstTask
       obj.feedback = true
-      callback('Feedback condition not yet designed', obj)
-      # Psuedo-code
-      #
     when 'fast'
       obj.timer = obj.hit.timer
+      return callback(null, obj)
     when 'basic'
       obj.itemTimeEstimate = obj.hit.itemTimeEstimate
+      return callback(null, obj)
     else
-      callback('Condition "' + obj.condition + '" not available."', obj)
-      
-  callback(null, obj)
-  return
+      return callback('Condition "' + obj.condition + '" not available."', obj)
 
-## 2.2 Exclude workers if relevance
+# Get Feedback
+# Feedback condition needs to retrieval extra information
+getFeedback = (obj, callback) ->
+  if obj.feedback
+    getFeedback = require './getFeedback'
+    return getFeedback(obj, callback)
+  else
+    # Move along
+    return callback(null, obj)
+
+## 2.2 Exclude workers if relevant
 excludeWorkers = (obj, callback) ->
   if not obj.hit.exclude.pastInTaskType
     return callback(null, obj)
