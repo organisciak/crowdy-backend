@@ -62,6 +62,19 @@ var hitSchema = mongoose.Schema({
     }
 });
 
+/* Get an array of all the hits with the same type.*/
+hitSchema.statics.listAllByType = function(type, callback) {
+    Hit.aggregate([
+      {$match:{"type": type}},
+      {$group:{_id:null, "hits":{$addToSet:'$_id'}}}
+    ]).exec(function(err, results){
+        if (err) { return callback(err); };
+        // Return just the array of IDs (and convert to String from ObjectId)
+        var arr = results[0].hits.map(function(hit){return hit.toString();});
+        return callback(null, arr);
+    })
+};
+
 var Hit = mongoose.connection.model('Hit', hitSchema);
 
 module.exports = Hit; 

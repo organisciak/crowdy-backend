@@ -105,7 +105,7 @@ taskSetSchema.statics.verifyBonus = function(_id, bonus, callback){
             return callback("Didn't find assignment " + _id +
                 "with a bonus of " + bonus);
         } else {
-            // First test passed, no verify that the bonus *amount* was correct
+            // First test passed, now verify that the bonus *amount* was correct
             // based on HIT.payment.bonus.items
             // TODO
             return callback(null);
