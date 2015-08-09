@@ -29,6 +29,9 @@ var taskSetSchema = mongoose.Schema({
         satisfaction: String,
         pay:String
     },
+    // Meta, an open field to add other info (e.g. stats that we may have
+    // elsewhere but is nice to have within the taskset too)
+    meta: mongoose.Schema.Types.Mixed,
     payment: {type:Number, default: 0},
     // Total Bonus (for task, + per item bonuses)
     bonus: {type:Number, default: 0},

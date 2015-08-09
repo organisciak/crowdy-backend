@@ -30,14 +30,16 @@ prepareTaskset = (opts, callback) ->
 
     # Count of tasksets in the given hit done
     countUserHIT: (callback) ->
-      TaskSet.countUserHIT(opts.user, opts.hit_id, callback)
+      #if opts.taskset_id is "TEST"
+      #  return callback(null,1)
+      return TaskSet.countUserHIT(opts.user, opts.hit_id, callback)
     
     # List of user's past items completed (not specific to the current hit)
     userItemList: (callback) -> TaskSet.userItemList(opts.user, callback)
 
     userFacetItemList: ['userItemList', 'facet', (callback, obj) ->
       if not obj.facet
-        return callback(null, obj.userItemList.userItemList)
+        return callback(null, obj.userItemList)
 
       list = _.filter(obj.userItemList, (item) ->
         if not item._id.facet
@@ -84,7 +86,10 @@ prepareTaskset = (opts, callback) ->
     )]
 
     payment: ['hit', (callback, obj) ->
-      callback(null, {base: obj.hit.payment, bonus:obj.hit.bonus})
+      payment =
+        base: obj.hit.payment
+        bonus:obj.hit.bonus
+      callback(null, payment)
     ]
 
     ## Exclude workers if relevant (returns either false or an err)
@@ -93,7 +98,9 @@ prepareTaskset = (opts, callback) ->
         return callback(null, false)
       if obj.hit.exclude.pastInTaskType
         # Find hits with the same type (excluding this one)
-        hit_ids = _.filter(obj.allHitType, (id) -> id isnt obj.hit._id)
+        hit_ids = _.filter(obj.allHitType, (id) ->
+          id isnt obj.hit._id.toString()
+        )
         TaskSet.findOne(
           {hit_id:{$in:hit_ids}, user:obj.opts.user}
         ).exec((err, results) ->
@@ -128,7 +135,9 @@ prepareTaskset = (opts, callback) ->
 
     # Get Feedback, if required
     performanceFeedback: ['design', 'allHitType', (callback, obj) ->
-      if obj.condition is 'feedback'
+      if obj.opts.user == 'PREVIEWUSER'
+        return callback()
+      else if obj.condition is 'feedback'
         getFeedback = require './getFeedback'
         return getFeedback(obj, callback)
       else
@@ -139,8 +148,8 @@ prepareTaskset = (opts, callback) ->
     ## Facets let us define subgroups of the data, like 'queries' for an IR hit
     facet: ['hit', 'countFacetsCompleted', 'userFacetCounts',
     (callback, obj) ->
-      if not (obj.hit.facets and obj.hit.facets.length > 0)
-        callback(null, null)
+      if not obj.hit.facets or (obj.hit.facets.length is 0)
+        return callback(null, null)
       
       # Rather than randomly sampling a facet, let's sample the one with the
       # least completed or locked items
@@ -292,8 +301,8 @@ prepareTaskset = (opts, callback) ->
   ]
 
 
-  taskset: ['opts', 'sample', 'hit', 'facet',
-  (callback, obj) ->
+  taskset: ['opts', 'sample', 'hit', 'facet', 'performanceFeedback',
+  'condition', 'design', 'countUserHIT', (callback, obj) ->
     tasks = _.map(obj.sample, (task) ->
       type: obj.hit.type
       item:
@@ -308,6 +317,10 @@ prepareTaskset = (opts, callback) ->
       obj.opts.taskset_id =  "TEST" + Math.floor(Math.random()*Math.pow(10,10))
       console.log "Generating unique taskset_id: " + obj.opts.taskset_id
 
+    if obj.performanceFeedback
+      pf = obj.performanceFeedback
+      percentile = (pf.worker.rank/pf.numWorkers)
+
     taskset =
       _id: obj.opts.taskset_id
       lock: obj.opts.lock
@@ -316,6 +329,13 @@ prepareTaskset = (opts, callback) ->
       hit_id: obj.opts.hit_id
       facet: ( _.pick(obj.facet, ['meta', '_id']) || null)
       turk_hit_id: obj.opts.turk_hit_id
+      # This is extra information meant for easier archiving. The front-end
+      # doesn't use anything in meta
+      meta:
+        design: obj.design
+        condition: obj.condition
+        countUserHIT: obj.countUserHIT
+        percentile: (percentile || null)
       time:
         start:(new Date())
         submit: null
