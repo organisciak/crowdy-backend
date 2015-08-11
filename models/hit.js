@@ -36,6 +36,7 @@ var hitSchema = mongoose.Schema({
         meta:mongoose.Schema.Types.Mixed,
         items: [Number],
     }],
+    trainingset_id: String,
     // An explanation of what kind of facet is used, if any.
     // Optional, because this information should be gleamed
     // from the hit.type. If type === 'Relevance judgments", we

@@ -122,12 +122,30 @@ prepareTaskset = (opts, callback) ->
         return callback(null, obj.hit.condition.laterTasks)
     ]
 
-    # Set 'design' (basic, teaching, and fast are designs, but the 'feedback'
+    training: ['condition', (callback, obj) ->
+      if obj.condition isnt 'training'
+        return callback(null, null)
+      TrainingSet = require './models/trainingset'
+      TrainingSet
+        .findOne({_id:obj.hit.trainingset_id})
+        .exec((err, result) ->
+          if err then return callback(err, result)
+          if not result
+            return callback("Can't find training information", null)
+          return callback(null, result)
+        )
+    ]
+
+    # Set 'design' (basic, training, and fast are designs, but the 'feedback'
     # condition needs an underlying design of its own.
     design: ['condition', (callback, obj) ->
       if obj.condition is 'feedback'
         # This assumes that feedback is always a laterTasks condition
         design = obj.hit.condition.firstTask
+      else if obj.condition is 'training'
+        later = obj.hit.condition.laterTasks
+        # Fallback on basic if in a training/feedback condition
+        design = if later is 'feedback' then 'basic' else later
       else
         design = obj.condition
       callback(null, design)
@@ -136,7 +154,7 @@ prepareTaskset = (opts, callback) ->
     # Get Feedback, if required
     performanceFeedback: ['design', 'allHitType', (callback, obj) ->
       if obj.opts.user == 'PREVIEWUSER'
-        return callback()
+        return callback(null, null)
       else if obj.condition is 'feedback'
         getFeedback = require './getFeedback'
         return getFeedback(obj, callback)
@@ -146,10 +164,16 @@ prepareTaskset = (opts, callback) ->
 
     ## Sample a facet, if relevant
     ## Facets let us define subgroups of the data, like 'queries' for an IR hit
-    facet: ['hit', 'countFacetsCompleted', 'userFacetCounts',
-    (callback, obj) ->
+    facet: ['hit', 'condition', 'training', 'countFacetsCompleted',
+    'userFacetCounts', (callback, obj) ->
       if not obj.hit.facets or (obj.hit.facets.length is 0)
         return callback(null, null)
+
+      if obj.condition is 'training'
+        facet =
+          items: obj.training.items
+          meta: obj.training.meta
+        return callback(null, facet)
       
       # Rather than randomly sampling a facet, let's sample the one with the
       # least completed or locked items
@@ -185,15 +209,27 @@ prepareTaskset = (opts, callback) ->
       callback(null, sampled_facet)
     ]
 
-  samplePool: ['hit', 'facet', (callback, obj) ->
-    items = if obj.facet then obj.facet.items else obj.hit.items
-    callback(null, items)
+  samplePool: ['hit', 'facet', 'training', (callback, obj) ->
+    if obj.condition is 'training'
+      return callback(null, obj.training.items)
+    else if obj.facet
+      return callback(null, obj.facet.items)
+    else
+      return callback(null, obj.hit.items)
   ]
 
+  #acceptNewUsers: ['condition', 'countUserHIT', (callback,obj) ->
+  #  Taskset
+
     # Determine which items have already been done enough
-  maxed: ['opts', 'hit', 'design', 'facet', (callback, obj) ->
-    if obj.design is 'teaching'
-      ''' Don't need maxed info because teaching set is pre-determined '''
+  maxed: ['opts', 'hit', 'design', 'countUserHIT', 'samplePool', 'facet',
+  (callback, obj) ->
+    #if obj.condition is 'training' and obj.countUserHIT < 1
+    #  return callback("Sorry, for the moment, we're not taking new users."+
+    #  "Try again shortly", null)
+
+    if obj.condition is 'training'
+      ''' Don't need maxed info because training set is pre-determined '''
       return callback(null, null)
 
     if obj.opts.user == 'PREVIEWUSER'
@@ -231,6 +267,7 @@ prepareTaskset = (opts, callback) ->
   # An input hit might have errors, so we're doublechecking maxSetSize,
   # setting our own by the rules
   maxSetSize: ['hit', 'design', (callback, obj) ->
+    if obj.condition is 'training' then return callback(null, null)
     # Fast design shouldn't specify a max size
     if obj.design is 'fast' and obj.hit.maxSetSize
       # Ignore any max set size that may be specified, and return a large
@@ -245,14 +282,13 @@ prepareTaskset = (opts, callback) ->
   ]
   # Sample task items
   sample : ['hit', 'maxed', 'design', 'samplePool', 'userFacetItemList',
-  (callback, obj) ->
+  'training', (callback, obj) ->
     # Load Item model
     ItemModel = require('./models/' + obj.hit.itemModel)
 
-    if obj.design is 'teaching'
-      callback("Teaching set not ready yet", null)
-    
-    if obj.design is 'basic' or 'fast'
+    if obj.condition is 'training'
+      itemSampleIds = obj.training.items
+    else if obj.design is 'basic' or 'fast'
       if obj.opts.user == 'PREVIEWUSER'
         candidates = obj.samplePool
       else
@@ -261,43 +297,42 @@ prepareTaskset = (opts, callback) ->
           item._id.item for item in obj.userFacetItemList
         )
         candidates = _.difference(obj.samplePool, excludes)
-
       itemSampleIds = _.sample(candidates, obj.maxSetSize)
 
-      # Query info for all the sampled items
-      if obj.hit.itemModel is 'pin'
-        projection = { url:1, description:1, title:1,
-        image:1, likes:1, repins:1 }
-      else
-        projection = {}
-      ItemModel.find({_id:{$in:itemSampleIds}},
-        projection,
-        (err, results) ->
-          if err then return callback(err)
-          sample = results
-          if sample.length is 0
-            msg = "No tasks available. This may be because you've finished "+
-            "all the tasks that we have ready, or other people are working "+
-            "on everything on that's available (try again later), or we "+
-            "screwed something up (sorry)."
-            callback(msg, null)
-          else
-            callback(err, sample)
-        )
+    # Query info for all the sampled items
+    if obj.hit.itemModel is 'pin'
+      projection = { url:1, description:1, title:1,
+      image:1, likes:1, repins:1 }
+    else
+      projection = {}
+    ItemModel.find({_id:{$in:itemSampleIds}},
+      projection,
+      (err, results) ->
+        if err then return callback(err)
+        sample = results
+        if sample.length is 0
+          msg = "No tasks available. This may be because you've finished "+
+          "all the tasks that we have ready, or other people are working "+
+          "on everything on that's available (try again later), or we "+
+          "screwed something up (sorry)."
+          callback(msg, null)
+        else
+          callback(err, sample)
+      )
   ]
 
   timer: ['design', 'hit', (callback, obj) ->
     if obj.design is 'fast'
       return callback(null, obj.hit.timer)
     else
-      return callback()
+      return callback(null)
   ]
 
   itemTimeEstimate: ['design', (callback, obj) ->
     if obj.design is 'basic'
       return callback(null, obj.hit.itemTimeEstimate)
     else
-      return callback()
+      return callback(null, null)
   ]
 
 
@@ -333,6 +368,7 @@ prepareTaskset = (opts, callback) ->
       # doesn't use anything in meta
       meta:
         design: obj.design
+        training: (obj.hit.trainingset_id || null)
         condition: obj.condition
         countUserHIT: obj.countUserHIT
         percentile: (percentile || null)
@@ -370,7 +406,7 @@ cleanForFrontEnd = (obj, callback) ->
     task
   )
   response = _.pick(obj, ['taskset', 'condition', 'design', 'itemTimeEstimate',
-    'timer', 'performanceFeedback', 'payment', 'maxSetSize'])
+    'timer', 'training', 'performanceFeedback', 'payment', 'maxSetSize'])
 
   callback(null, response)
 
