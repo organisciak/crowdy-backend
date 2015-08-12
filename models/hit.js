@@ -17,6 +17,7 @@ var hitSchema = mongoose.Schema({
     // Bonus, in dollars
     bonus: {
         task:{type:Number, default:0},
+        firstTask:{type:Number, default:0},
         laterTask:{type:Number, default:0},
         // Nth array value corresponds to Nth task item. Last value will
         // repeat if there are more items (so a constant bonus would be
