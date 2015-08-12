@@ -23,8 +23,6 @@ loadHIT = (opts, callback) ->
 #1. Get as much info asynchronously as we can
 prepareTaskset = (opts, callback) ->
   async.auto({
-    opts: (callback) -> callback(null, opts)
-    
     # Count of all taskSets done by the user
     countUserAll: (callback) -> TaskSet.countUserAll(opts.user, callback)
 
@@ -33,7 +31,33 @@ prepareTaskset = (opts, callback) ->
       #if opts.taskset_id is "TEST"
       #  return callback(null,1)
       return TaskSet.countUserHIT(opts.user, opts.hit_id, callback)
-    
+
+    # Count locks, split by firstTimers and non-first-timers
+    countLocks: [(callback,obj) ->
+      TaskSet.aggregate([
+        {$match:
+          hit_id:opts.hit_id
+        },
+        {$project:
+          lock:
+            $cond:['$lock', 1, 0]
+          firstTask:
+            $cond:[{$gte:['$meta.countUserHIT',1]}, 'firstTask', 'laterTasks']
+        },
+        {$group:
+          _id:'$firstTask'
+          'locks':{$sum:'$lock'}
+        }
+      ]).exec((err, results)->
+        if err then return console.log(err,null)
+        countLocks = _.reduce(results, ((map, y) ->
+          map[y._id] = y.locks
+          return map
+        ), {})
+        return callback(null, countLocks)
+      )
+    ],
+   
     # List of user's past items completed (not specific to the current hit)
     userItemList: (callback) -> TaskSet.userItemList(opts.user, callback)
 
@@ -93,7 +117,14 @@ prepareTaskset = (opts, callback) ->
     ]
 
     ## Exclude workers if relevant (returns either false or an err)
-    excludeWorker: ['hit', 'opts', 'allHitType', ((callback, obj) ->
+    excludeWorker: ['hit', 'countLocks', 'allHitType', ((callback, obj) ->
+      # If we have a enough people doing later tasks, or if
+      # we have too many people doing their first task, stop taking new
+      # users.
+      if obj.countLocks.laterTasks > 5 or obj.countLocks.firstTask > 15
+        return callback("Sorry, for the moment we're not taking new users."+
+        "Try again shortly", null)
+
       if not obj.hit.exclude.pastInTaskType
         return callback(null, false)
       if obj.hit.exclude.pastInTaskType
@@ -102,7 +133,7 @@ prepareTaskset = (opts, callback) ->
           id isnt obj.hit._id.toString()
         )
         TaskSet.findOne(
-          {hit_id:{$in:hit_ids}, user:obj.opts.user}
+          {hit_id:{$in:hit_ids}, user:opts.user}
         ).exec((err, results) ->
           if (err) then console.error err
           if results
@@ -153,7 +184,7 @@ prepareTaskset = (opts, callback) ->
 
     # Get Feedback, if required
     performanceFeedback: ['design', 'allHitType', (callback, obj) ->
-      if obj.opts.user == 'PREVIEWUSER'
+      if opts.user == 'PREVIEWUSER'
         return callback(null, null)
       else if obj.condition is 'feedback'
         getFeedback = require './getFeedback'
@@ -218,28 +249,21 @@ prepareTaskset = (opts, callback) ->
       return callback(null, obj.hit.items)
   ]
 
-  #acceptNewUsers: ['condition', 'countUserHIT', (callback,obj) ->
-  #  Taskset
-
     # Determine which items have already been done enough
-  maxed: ['opts', 'hit', 'design', 'countUserHIT', 'samplePool', 'facet',
+  maxed: ['hit', 'design', 'countUserHIT', 'samplePool', 'facet',
   (callback, obj) ->
-    #if obj.condition is 'training' and obj.countUserHIT < 1
-    #  return callback("Sorry, for the moment, we're not taking new users."+
-    #  "Try again shortly", null)
-
     if obj.condition is 'training'
       ''' Don't need maxed info because training set is pre-determined '''
       return callback(null, null)
 
-    if obj.opts.user == 'PREVIEWUSER'
+    if opts.user == 'PREVIEWUSER'
       console.log "Preview user, no maxed items"
       return callback(null, [])
 
     # Get a list of all currentHIT items completed
     agg = [
       {$match:
-        hit_id:obj.opts.hit_id
+        hit_id:opts.hit_id
         'facet._id': (if obj.facet then ObjectId(obj.facet._id) else null)
       },
       {$project: "tasks.item.id":1 },
@@ -289,7 +313,7 @@ prepareTaskset = (opts, callback) ->
     if obj.condition is 'training'
       itemSampleIds = obj.training.items
     else if obj.design is 'basic' or 'fast'
-      if obj.opts.user == 'PREVIEWUSER'
+      if opts.user == 'PREVIEWUSER'
         candidates = obj.samplePool
       else
         # Create list of excludes
@@ -336,7 +360,7 @@ prepareTaskset = (opts, callback) ->
   ]
 
 
-  taskset: ['opts', 'sample', 'hit', 'facet', 'performanceFeedback',
+  taskset: ['sample', 'hit', 'facet', 'performanceFeedback',
   'condition', 'design', 'countUserHIT', (callback, obj) ->
     tasks = _.map(obj.sample, (task) ->
       type: obj.hit.type
@@ -348,22 +372,22 @@ prepareTaskset = (opts, callback) ->
     )
 
     # If taskset Id is "TEST", generate a unique one.
-    if obj.opts.taskset_id is "TEST"
-      obj.opts.taskset_id =  "TEST" + Math.floor(Math.random()*Math.pow(10,10))
-      console.log "Generating unique taskset_id: " + obj.opts.taskset_id
+    if opts.taskset_id is "TEST"
+      opts.taskset_id =  "TEST" + Math.floor(Math.random()*Math.pow(10,10))
+      console.log "Generating unique taskset_id: " + opts.taskset_id
 
     if obj.performanceFeedback
       pf = obj.performanceFeedback
       percentile = (pf.worker.rank/pf.numWorkers)
 
     taskset =
-      _id: obj.opts.taskset_id
-      lock: obj.opts.lock
-      assignment_id: obj.opts.assignment_id
-      user: obj.opts.user
-      hit_id: obj.opts.hit_id
+      _id: opts.taskset_id
+      lock: opts.lock
+      assignment_id: opts.assignment_id
+      user: opts.user
+      hit_id: opts.hit_id
       facet: ( _.pick(obj.facet, ['meta', '_id']) || null)
-      turk_hit_id: obj.opts.turk_hit_id
+      turk_hit_id: opts.turk_hit_id
       # This is extra information meant for easier archiving. The front-end
       # doesn't use anything in meta
       meta:
@@ -382,7 +406,7 @@ prepareTaskset = (opts, callback) ->
       tasks:tasks
         
     # Lock in-progress files if locking was requested
-    if (obj.opts.lock is true) and (obj.opts.user isnt "PREVIEWUSER")
+    if (opts.lock is true) and (opts.user isnt "PREVIEWUSER")
       tasksetInstance = new TaskSet(taskset)
       tasksetInstance.save((err, res) ->
         callback(err, taskset)
