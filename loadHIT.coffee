@@ -42,7 +42,7 @@ prepareTaskset = (opts, callback) ->
           lock:
             $cond:['$lock', 1, 0]
           firstTask:
-            $cond:[{$gte:['$meta.countUserHIT',1]}, 'firstTask', 'laterTasks']
+            $cond:[{$eq:['$meta.countUserHIT',0]}, 'firstTask', 'laterTasks']
         },
         {$group:
           _id:'$firstTask'
@@ -117,13 +117,21 @@ prepareTaskset = (opts, callback) ->
     ]
 
     ## Exclude workers if relevant (returns either false or an err)
-    excludeWorker: ['hit', 'countLocks', 'allHitType', ((callback, obj) ->
+    excludeWorker: ['hit', 'countLocks', 'countUserHIT', 'allHitType',
+    ((callback, obj) ->
       # If we have a enough people doing later tasks, or if
       # we have too many people doing their first task, stop taking new
       # users.
-      if obj.countLocks.laterTasks > 5 or obj.countLocks.firstTask > 15
-        return callback("Sorry, for the moment we're not taking new users."+
-        "Try again shortly", null)
+      if ((obj.countLocks.laterTasks > 5 or obj.countLocks.firstTask >= 7) and
+      obj.countUserHIT is 0)
+        #if opts.user == 'PREVIEWUSER'
+        #  return callback(null, null)
+        #else
+        return callback("Sorry, for the moment we're not taking new users: "+
+          "there are many people in the system right now and they take "+
+          " priority. We'll open up more tasks when they are available! "+
+        "Try again shortly. (If you've already done a task in this set, "+
+        "we do have tasks for you.)", null)
 
       if not obj.hit.exclude.pastInTaskType
         return callback(null, false)
